@@ -44,6 +44,7 @@ migrations/        # schéma SQL versionné (issu du MPD du cadrage)
 ## Feuille de route
 
 - [x] Fondation : serveur, pool DB, migrations, `/health`
-- [ ] Authentification (inscription / connexion, JWT)
-- [ ] CRUD personnage
-- [ ] Parties & boucle de jeu (Maître du Jeu IA)
+- [x] Authentification (inscription / connexion, JWT, Argon2)
+- [x] CRUD personnage (isolé par utilisateur)
+- [x] Parties & boucle de jeu (Maître du Jeu GPT-4o, état persisté)
+- [ ] Frontend React

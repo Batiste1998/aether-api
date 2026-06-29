@@ -20,6 +20,9 @@ pub enum AppError {
     #[error("non autorisé")]
     Unauthorized,
 
+    #[error("le Maître du Jeu est indisponible")]
+    Ai,
+
     #[error("erreur interne du serveur")]
     Internal,
 }
@@ -30,11 +33,12 @@ impl IntoResponse for AppError {
             AppError::NotFound => StatusCode::NOT_FOUND,
             AppError::BadRequest(_) => StatusCode::BAD_REQUEST,
             AppError::Unauthorized => StatusCode::UNAUTHORIZED,
+            AppError::Ai => StatusCode::BAD_GATEWAY,
             AppError::Database(_) | AppError::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
         // On loggue les erreurs serveur sans exposer les détails internes au client.
-        if status == StatusCode::INTERNAL_SERVER_ERROR {
+        if status.is_server_error() {
             tracing::error!("{self}");
         }
 

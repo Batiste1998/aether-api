@@ -1,7 +1,9 @@
+mod ai;
 mod auth;
 mod config;
 mod error;
 mod personnage;
+mod partie;
 mod routes;
 mod state;
 
@@ -37,9 +39,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("exécution des migrations…");
     sqlx::migrate!("./migrations").run(&pool).await?;
 
+    // Le client OpenAI lit OPENAI_API_KEY dans l'environnement.
+    let openai = async_openai::Client::new();
+
     let state = AppState {
         pool,
         config: config.clone(),
+        openai,
     };
 
     let app = routes::router(state)
