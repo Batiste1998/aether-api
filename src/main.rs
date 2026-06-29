@@ -1,6 +1,7 @@
 mod auth;
 mod config;
 mod error;
+mod personnage;
 mod routes;
 mod state;
 

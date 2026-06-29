@@ -9,5 +9,6 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health::health))
         .nest("/auth", crate::auth::router())
+        .nest("/personnages", crate::personnage::router())
         .with_state(state)
 }
