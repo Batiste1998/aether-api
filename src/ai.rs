@@ -54,6 +54,18 @@ pub struct PnjOut {
     pub attitude: Option<String>,
 }
 
+/// Objet gagné ou perdu par le personnage.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ObjetOut {
+    pub nom: String,
+    #[serde(rename = "type", default)]
+    pub type_objet: Option<String>,
+    #[serde(default)]
+    pub effet: Option<String>,
+    #[serde(default)]
+    pub quantite: Option<i32>,
+}
+
 /// Sortie complète et structurée du Maître du Jeu pour un tour.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MjOutput {
@@ -66,6 +78,10 @@ pub struct MjOutput {
     pub quetes: Vec<QueteOut>,
     #[serde(default)]
     pub pnj: Vec<PnjOut>,
+    #[serde(default)]
+    pub objets_ajoutes: Vec<ObjetOut>,
+    #[serde(default)]
+    pub objets_retires: Vec<ObjetOut>,
 }
 
 const SYSTEME: &str = r#"Tu es le Maître du Jeu (MJ) de « Chroniques d'Æther », un jeu de rôle textuel dans un univers médiéval-fantastique. Tu animes l'aventure d'un seul joueur.
@@ -80,6 +96,7 @@ Règles :
 - Récompense la progression avec "xp_delta" (entre 5 et 50 selon l'enjeu) et parfois "or_delta".
 - Crée une quête (dans "quetes") quand c'est narrativement pertinent ; passe son "statut" à "reussie" ou "echouee" quand elle se conclut.
 - Introduis des PNJ (dans "pnj") quand la scène en fait apparaître.
+- Quand le joueur trouve, reçoit ou ramasse un objet, ajoute-le dans "objets_ajoutes". Quand il en consomme, perd ou donne un, mets-le dans "objets_retires". Le champ "type" vaut "arme", "armure", "consommable" ou "cle".
 - Si l'action est le tout premier tour, plante le décor et propose une accroche.
 
 Réponds UNIQUEMENT par un objet JSON valide, sans texte autour, de cette forme exacte :
@@ -88,7 +105,9 @@ Réponds UNIQUEMENT par un objet JSON valide, sans texte autour, de cette forme 
   "jets_de_des": [{"raison": "string", "de": "d20", "resultat": 0, "reussite": true}],
   "changements_etat": {"pv_delta": 0, "xp_delta": 0, "or_delta": 0},
   "quetes": [{"titre": "string", "description": "string", "statut": "active", "recompense_xp": 0, "recompense_or": 0}],
-  "pnj": [{"nom": "string", "description": "string", "attitude": "neutre"}]
+  "pnj": [{"nom": "string", "description": "string", "attitude": "neutre"}],
+  "objets_ajoutes": [{"nom": "string", "type": "consommable", "effet": "string", "quantite": 1}],
+  "objets_retires": [{"nom": "string", "quantite": 1}]
 }
 Les tableaux peuvent être vides."#;
 

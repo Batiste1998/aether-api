@@ -30,6 +30,35 @@ pub struct TourDto {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Serialize, sqlx::FromRow)]
+pub struct QueteDto {
+    pub id_quete: i32,
+    pub titre: String,
+    pub description: Option<String>,
+    pub statut: String,
+    pub recompense_xp: i32,
+    pub recompense_or: i32,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct PnjDto {
+    pub id_pnj: i32,
+    pub nom: String,
+    pub description: Option<String>,
+    pub attitude: Option<String>,
+}
+
+#[derive(Serialize, sqlx::FromRow)]
+pub struct InventaireItem {
+    pub id_objet: i32,
+    pub nom: String,
+    pub type_objet: String,
+    pub description: Option<String>,
+    pub effet: Option<String>,
+    pub quantite: i32,
+    pub equipe: bool,
+}
+
 const PARTIE_COLS: &str = "id_partie, titre, statut, theme, created_at, updated_at, id_personnage";
 
 /// Vérifie qu'une partie appartient à l'utilisateur ; renvoie (id_personnage, statut).
@@ -114,15 +143,18 @@ pub struct PartieDetail {
     #[serde(flatten)]
     pub partie: PartieDto,
     pub tours: Vec<TourDto>,
+    pub quetes: Vec<QueteDto>,
+    pub pnj: Vec<PnjDto>,
+    pub inventaire: Vec<InventaireItem>,
 }
 
-/// GET /parties/{id} — détail d'une partie avec son fil narratif.
+/// GET /parties/{id} — détail complet : fil narratif, quêtes, PNJ, inventaire.
 pub async fn detail(
     State(state): State<AppState>,
     user: AuthUser,
     Path(id): Path<i32>,
 ) -> Result<Json<PartieDetail>, AppError> {
-    partie_owned(&state.pool, user.id, id)
+    let (id_personnage, _) = partie_owned(&state.pool, user.id, id)
         .await?
         .ok_or(AppError::NotFound)?;
 
@@ -140,7 +172,37 @@ pub async fn detail(
     .fetch_all(&state.pool)
     .await?;
 
-    Ok(Json(PartieDetail { partie, tours }))
+    let quetes = sqlx::query_as::<_, QueteDto>(
+        "SELECT id_quete, titre, description, statut, recompense_xp, recompense_or
+         FROM quete WHERE id_partie = $1 ORDER BY id_quete ASC",
+    )
+    .bind(id)
+    .fetch_all(&state.pool)
+    .await?;
+
+    let pnj = sqlx::query_as::<_, PnjDto>(
+        "SELECT id_pnj, nom, description, attitude FROM pnj WHERE id_partie = $1 ORDER BY id_pnj ASC",
+    )
+    .bind(id)
+    .fetch_all(&state.pool)
+    .await?;
+
+    let inventaire = sqlx::query_as::<_, InventaireItem>(
+        "SELECT o.id_objet, o.nom, o.type AS type_objet, o.description, o.effet, i.quantite, i.equipe
+         FROM inventaire i JOIN objet o ON o.id_objet = i.id_objet
+         WHERE i.id_personnage = $1 ORDER BY o.nom ASC",
+    )
+    .bind(id_personnage)
+    .fetch_all(&state.pool)
+    .await?;
+
+    Ok(Json(PartieDetail {
+        partie,
+        tours,
+        quetes,
+        pnj,
+        inventaire,
+    }))
 }
 
 // ============ Le tour de jeu (Maître du Jeu IA) ============
@@ -289,6 +351,64 @@ pub async fn jouer(
             .bind(id)
             .execute(&mut *tx)
             .await?;
+    }
+
+    // Objets gagnés : on référence (ou crée) l'objet par son nom, puis on cumule la quantité.
+    for o in &sortie.objets_ajoutes {
+        let qte = o.quantite.unwrap_or(1).max(1);
+        let type_objet = match o.type_objet.as_deref() {
+            Some(t @ ("arme" | "armure" | "consommable" | "cle")) => t,
+            _ => "consommable",
+        };
+        let (id_objet,): (i32,) = sqlx::query_as(
+            "INSERT INTO objet (nom, type, effet) VALUES ($1, $2, $3)
+             ON CONFLICT (nom) DO UPDATE SET nom = EXCLUDED.nom
+             RETURNING id_objet",
+        )
+        .bind(&o.nom)
+        .bind(type_objet)
+        .bind(&o.effet)
+        .fetch_one(&mut *tx)
+        .await?;
+
+        sqlx::query(
+            "INSERT INTO inventaire (id_personnage, id_objet, quantite) VALUES ($1, $2, $3)
+             ON CONFLICT (id_personnage, id_objet)
+             DO UPDATE SET quantite = inventaire.quantite + EXCLUDED.quantite",
+        )
+        .bind(id_personnage)
+        .bind(id_objet)
+        .bind(qte)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    // Objets perdus : on décrémente, puis on supprime la ligne si la quantité tombe à zéro.
+    for o in &sortie.objets_retires {
+        let qte = o.quantite.unwrap_or(1).max(1);
+        if let Some((id_objet,)) =
+            sqlx::query_as::<_, (i32,)>("SELECT id_objet FROM objet WHERE nom = $1")
+                .bind(&o.nom)
+                .fetch_optional(&mut *tx)
+                .await?
+        {
+            sqlx::query(
+                "UPDATE inventaire SET quantite = quantite - $1
+                 WHERE id_personnage = $2 AND id_objet = $3",
+            )
+            .bind(qte)
+            .bind(id_personnage)
+            .bind(id_objet)
+            .execute(&mut *tx)
+            .await?;
+            sqlx::query(
+                "DELETE FROM inventaire WHERE id_personnage = $1 AND id_objet = $2 AND quantite <= 0",
+            )
+            .bind(id_personnage)
+            .bind(id_objet)
+            .execute(&mut *tx)
+            .await?;
+        }
     }
 
     sqlx::query("UPDATE partie SET updated_at = now() WHERE id_partie = $1")
