@@ -2,10 +2,11 @@ mod ai;
 mod auth;
 mod config;
 mod error;
-mod personnage;
 mod partie;
+mod personnage;
 mod reference;
 mod routes;
+mod rules;
 mod state;
 
 use std::time::Duration;

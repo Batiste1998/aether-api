@@ -14,7 +14,12 @@ pub struct Claims {
 }
 
 /// Génère un token signé valable 7 jours.
-pub fn create_token(secret: &str, user_id: i32, pseudo: &str, role: &str) -> Result<String, AppError> {
+pub fn create_token(
+    secret: &str,
+    user_id: i32,
+    pseudo: &str,
+    role: &str,
+) -> Result<String, AppError> {
     let exp = (Utc::now() + Duration::days(7)).timestamp() as usize;
     let claims = Claims {
         sub: user_id,

@@ -61,7 +61,9 @@ pub async fn create(
     Json(req): Json<CreatePersonnage>,
 ) -> Result<(StatusCode, Json<PersonnageDto>), AppError> {
     if req.nom.trim().is_empty() {
-        return Err(AppError::BadRequest("le nom du personnage est requis".into()));
+        return Err(AppError::BadRequest(
+            "le nom du personnage est requis".into(),
+        ));
     }
 
     // La classe fixe les PV de départ (et plus tard les stats / compétences).
@@ -121,15 +123,158 @@ pub async fn delete(
     user: AuthUser,
     Path(id): Path<i32>,
 ) -> Result<StatusCode, AppError> {
-    let res = sqlx::query("DELETE FROM personnage WHERE id_personnage = $1 AND id_utilisateur = $2")
-        .bind(id)
-        .bind(user.id)
-        .execute(&state.pool)
-        .await?;
+    let res =
+        sqlx::query("DELETE FROM personnage WHERE id_personnage = $1 AND id_utilisateur = $2")
+            .bind(id)
+            .bind(user.id)
+            .execute(&state.pool)
+            .await?;
     if res.rows_affected() == 0 {
         return Err(AppError::NotFound);
     }
     Ok(StatusCode::NO_CONTENT)
+}
+
+// ============ Inventaire : équiper / utiliser ============
+
+/// Vérifie que le personnage appartient à l'utilisateur.
+async fn assert_owner(pool: &sqlx::PgPool, user_id: i32, pid: i32) -> Result<(), AppError> {
+    let owns: Option<(i32,)> = sqlx::query_as(
+        "SELECT id_personnage FROM personnage WHERE id_personnage = $1 AND id_utilisateur = $2",
+    )
+    .bind(pid)
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+    owns.ok_or(AppError::NotFound).map(|_| ())
+}
+
+#[derive(Deserialize)]
+pub struct EquiperRequest {
+    pub equipe: bool,
+}
+
+/// POST /personnages/{id}/inventaire/{id_objet}/equiper — équipe ou retire un objet.
+pub async fn equiper(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path((pid, oid)): Path<(i32, i32)>,
+    Json(req): Json<EquiperRequest>,
+) -> Result<StatusCode, AppError> {
+    assert_owner(&state.pool, user.id, pid).await?;
+
+    let row: Option<(String,)> = sqlx::query_as(
+        "SELECT o.type FROM inventaire i JOIN objet o ON o.id_objet = i.id_objet
+         WHERE i.id_personnage = $1 AND i.id_objet = $2",
+    )
+    .bind(pid)
+    .bind(oid)
+    .fetch_optional(&state.pool)
+    .await?;
+    let (type_objet,) = row.ok_or(AppError::NotFound)?;
+
+    if req.equipe && type_objet != "arme" && type_objet != "armure" {
+        return Err(AppError::BadRequest(
+            "seules les armes et armures peuvent être équipées".into(),
+        ));
+    }
+
+    let mut tx = state.pool.begin().await?;
+    if req.equipe {
+        // Un seul objet équipé par type : on retire les autres du même type.
+        sqlx::query(
+            "UPDATE inventaire SET equipe = false FROM objet o
+             WHERE inventaire.id_objet = o.id_objet
+               AND inventaire.id_personnage = $1 AND o.type = $2",
+        )
+        .bind(pid)
+        .bind(&type_objet)
+        .execute(&mut *tx)
+        .await?;
+    }
+    sqlx::query("UPDATE inventaire SET equipe = $1 WHERE id_personnage = $2 AND id_objet = $3")
+        .bind(req.equipe)
+        .bind(pid)
+        .bind(oid)
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[derive(Serialize)]
+pub struct UtiliserResponse {
+    pub pv_actuels: i32,
+    pub pv_max: i32,
+    pub soin: i32,
+}
+
+/// POST /personnages/{id}/inventaire/{id_objet}/utiliser — consomme un objet.
+pub async fn utiliser(
+    State(state): State<AppState>,
+    user: AuthUser,
+    Path((pid, oid)): Path<(i32, i32)>,
+) -> Result<Json<UtiliserResponse>, AppError> {
+    let perso: Option<(i32, i32)> =
+        sqlx::query_as("SELECT pv_actuels, pv_max FROM personnage WHERE id_personnage = $1 AND id_utilisateur = $2")
+            .bind(pid)
+            .bind(user.id)
+            .fetch_optional(&state.pool)
+            .await?;
+    let (pv_actuels, pv_max) = perso.ok_or(AppError::NotFound)?;
+
+    let item: Option<(String, Option<String>, i32)> = sqlx::query_as(
+        "SELECT o.type, o.effet, i.quantite FROM inventaire i JOIN objet o ON o.id_objet = i.id_objet
+         WHERE i.id_personnage = $1 AND i.id_objet = $2",
+    )
+    .bind(pid)
+    .bind(oid)
+    .fetch_optional(&state.pool)
+    .await?;
+    let (type_objet, effet, quantite) = item.ok_or(AppError::NotFound)?;
+
+    if type_objet != "consommable" {
+        return Err(AppError::BadRequest(
+            "seuls les consommables peuvent être utilisés".into(),
+        ));
+    }
+
+    let soin = effet
+        .as_deref()
+        .map(crate::rules::soin_depuis_effet)
+        .unwrap_or(0);
+    let new_pv = (pv_actuels + soin).min(pv_max);
+
+    let mut tx = state.pool.begin().await?;
+    sqlx::query("UPDATE personnage SET pv_actuels = $1 WHERE id_personnage = $2")
+        .bind(new_pv)
+        .bind(pid)
+        .execute(&mut *tx)
+        .await?;
+    // La contrainte quantite > 0 interdit de descendre à 0 : on supprime la ligne dans ce cas.
+    if quantite <= 1 {
+        sqlx::query("DELETE FROM inventaire WHERE id_personnage = $1 AND id_objet = $2")
+            .bind(pid)
+            .bind(oid)
+            .execute(&mut *tx)
+            .await?;
+    } else {
+        sqlx::query(
+            "UPDATE inventaire SET quantite = quantite - 1 WHERE id_personnage = $1 AND id_objet = $2",
+        )
+        .bind(pid)
+        .bind(oid)
+        .execute(&mut *tx)
+        .await?;
+    }
+    tx.commit().await?;
+
+    Ok(Json(UtiliserResponse {
+        pv_actuels: new_pv,
+        pv_max,
+        soin,
+    }))
 }
 
 /// Routes personnage, montées sous `/personnages`.
@@ -137,4 +282,6 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(create).get(list))
         .route("/{id}", get(detail).delete(delete))
+        .route("/{id}/inventaire/{id_objet}/equiper", post(equiper))
+        .route("/{id}/inventaire/{id_objet}/utiliser", post(utiliser))
 }

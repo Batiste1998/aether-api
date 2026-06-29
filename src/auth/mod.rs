@@ -16,7 +16,10 @@ pub mod password;
 /// handler pour rendre la route protégée.
 pub struct AuthUser {
     pub id: i32,
+    // Conservés pour un futur contrôle d'accès par rôle (back-office admin).
+    #[allow(dead_code)]
     pub pseudo: String,
+    #[allow(dead_code)]
     pub role: String,
 }
 

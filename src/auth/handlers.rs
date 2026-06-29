@@ -112,10 +112,7 @@ pub async fn login(
 
 /// GET /auth/me — route protégée : renvoie l'utilisateur courant.
 /// L'extracteur `AuthUser` valide le token avant d'atteindre le handler.
-pub async fn me(
-    State(state): State<AppState>,
-    user: AuthUser,
-) -> Result<Json<UserDto>, AppError> {
+pub async fn me(State(state): State<AppState>, user: AuthUser) -> Result<Json<UserDto>, AppError> {
     let (id, pseudo, email, role): (i32, String, String, String) = sqlx::query_as(
         "SELECT id_utilisateur, pseudo, email, role FROM utilisateur WHERE id_utilisateur = $1",
     )

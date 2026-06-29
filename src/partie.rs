@@ -95,12 +95,13 @@ pub async fn create(
     user: AuthUser,
     Json(req): Json<CreatePartie>,
 ) -> Result<(StatusCode, Json<PartieDto>), AppError> {
-    let owns: Option<(i32,)> =
-        sqlx::query_as("SELECT id_personnage FROM personnage WHERE id_personnage = $1 AND id_utilisateur = $2")
-            .bind(req.id_personnage)
-            .bind(user.id)
-            .fetch_optional(&state.pool)
-            .await?;
+    let owns: Option<(i32,)> = sqlx::query_as(
+        "SELECT id_personnage FROM personnage WHERE id_personnage = $1 AND id_utilisateur = $2",
+    )
+    .bind(req.id_personnage)
+    .bind(user.id)
+    .fetch_optional(&state.pool)
+    .await?;
     owns.ok_or(AppError::NotFound)?;
 
     let titre = req
@@ -158,11 +159,12 @@ pub async fn detail(
         .await?
         .ok_or(AppError::NotFound)?;
 
-    let partie: PartieDto =
-        sqlx::query_as(&format!("SELECT {PARTIE_COLS} FROM partie WHERE id_partie = $1"))
-            .bind(id)
-            .fetch_one(&state.pool)
-            .await?;
+    let partie: PartieDto = sqlx::query_as(&format!(
+        "SELECT {PARTIE_COLS} FROM partie WHERE id_partie = $1"
+    ))
+    .bind(id)
+    .fetch_one(&state.pool)
+    .await?;
 
     let tours = sqlx::query_as::<_, TourDto>(
         "SELECT id_tour, numero, action_joueur, narration_ia, etat_jeu, created_at
@@ -291,13 +293,17 @@ pub async fn jouer(
 
     // 4) Calcul du nouvel état (XP -> niveau -> PV max -> PV).
     let xp = (perso.xp + sortie.changements_etat.xp_delta).max(0);
-    let niveau = 1 + xp / 100;
-    let pv_max = perso.pv_base + (niveau - 1) * 20;
+    let niveau = crate::rules::niveau_pour_xp(xp);
+    let pv_max = crate::rules::pv_max_pour(perso.pv_base, niveau);
     let pv_actuels = (perso.pv_actuels + sortie.changements_etat.pv_delta).clamp(0, pv_max);
     let or_pieces = (perso.or_pieces + sortie.changements_etat.or_delta).max(0);
 
     let numero = derniers.first().map(|t| t.0 + 1).unwrap_or(1);
-    let action_db: Option<&str> = if action.is_empty() { None } else { Some(action) };
+    let action_db: Option<&str> = if action.is_empty() {
+        None
+    } else {
+        Some(action)
+    };
     let snapshot = serde_json::to_value(&sortie).map_err(|_| AppError::Internal)?;
 
     // 5) Persistance atomique.
@@ -344,22 +350,24 @@ pub async fn jouer(
     }
 
     for p in &sortie.pnj {
-        sqlx::query("INSERT INTO pnj (nom, description, attitude, id_partie) VALUES ($1, $2, $3, $4)")
-            .bind(&p.nom)
-            .bind(&p.description)
-            .bind(p.attitude.as_deref().unwrap_or("neutre"))
-            .bind(id)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "INSERT INTO pnj (nom, description, attitude, id_partie) VALUES ($1, $2, $3, $4)
+             ON CONFLICT (id_partie, nom) DO UPDATE
+             SET attitude = EXCLUDED.attitude,
+                 description = COALESCE(EXCLUDED.description, pnj.description)",
+        )
+        .bind(&p.nom)
+        .bind(&p.description)
+        .bind(p.attitude.as_deref().unwrap_or("neutre"))
+        .bind(id)
+        .execute(&mut *tx)
+        .await?;
     }
 
     // Objets gagnés : on référence (ou crée) l'objet par son nom, puis on cumule la quantité.
     for o in &sortie.objets_ajoutes {
         let qte = o.quantite.unwrap_or(1).max(1);
-        let type_objet = match o.type_objet.as_deref() {
-            Some(t @ ("arme" | "armure" | "consommable" | "cle")) => t,
-            _ => "consommable",
-        };
+        let type_objet = crate::rules::normaliser_type_objet(o.type_objet.as_deref());
         let (id_objet,): (i32,) = sqlx::query_as(
             "INSERT INTO objet (nom, type, effet) VALUES ($1, $2, $3)
              ON CONFLICT (nom) DO UPDATE SET nom = EXCLUDED.nom
@@ -383,31 +391,38 @@ pub async fn jouer(
         .await?;
     }
 
-    // Objets perdus : on décrémente, puis on supprime la ligne si la quantité tombe à zéro.
+    // Objets perdus : on décrémente, ou on supprime la ligne si la quantité tombe à zéro
+    // (la contrainte quantite > 0 interdit la valeur 0).
     for o in &sortie.objets_retires {
         let qte = o.quantite.unwrap_or(1).max(1);
-        if let Some((id_objet,)) =
-            sqlx::query_as::<_, (i32,)>("SELECT id_objet FROM objet WHERE nom = $1")
-                .bind(&o.nom)
-                .fetch_optional(&mut *tx)
-                .await?
-        {
-            sqlx::query(
-                "UPDATE inventaire SET quantite = quantite - $1
-                 WHERE id_personnage = $2 AND id_objet = $3",
-            )
-            .bind(qte)
-            .bind(id_personnage)
-            .bind(id_objet)
-            .execute(&mut *tx)
-            .await?;
-            sqlx::query(
-                "DELETE FROM inventaire WHERE id_personnage = $1 AND id_objet = $2 AND quantite <= 0",
-            )
-            .bind(id_personnage)
-            .bind(id_objet)
-            .execute(&mut *tx)
-            .await?;
+        let ligne: Option<(i32, i32)> = sqlx::query_as(
+            "SELECT i.id_objet, i.quantite FROM inventaire i
+             JOIN objet o ON o.id_objet = i.id_objet
+             WHERE o.nom = $1 AND i.id_personnage = $2",
+        )
+        .bind(&o.nom)
+        .bind(id_personnage)
+        .fetch_optional(&mut *tx)
+        .await?;
+
+        if let Some((id_objet, quantite)) = ligne {
+            if quantite - qte <= 0 {
+                sqlx::query("DELETE FROM inventaire WHERE id_personnage = $1 AND id_objet = $2")
+                    .bind(id_personnage)
+                    .bind(id_objet)
+                    .execute(&mut *tx)
+                    .await?;
+            } else {
+                sqlx::query(
+                    "UPDATE inventaire SET quantite = quantite - $1
+                     WHERE id_personnage = $2 AND id_objet = $3",
+                )
+                .bind(qte)
+                .bind(id_personnage)
+                .bind(id_objet)
+                .execute(&mut *tx)
+                .await?;
+            }
         }
     }
 
