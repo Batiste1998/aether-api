@@ -1,24 +1,4 @@
--- ============ Chroniques d'Æther — schéma initial ============
-
-CREATE TABLE classe (
-    id_classe          SERIAL PRIMARY KEY,
-    nom                VARCHAR(50)  NOT NULL UNIQUE,
-    description        TEXT,
-    pv_base            INT  NOT NULL DEFAULT 100,
-    force_base         INT  NOT NULL DEFAULT 10,
-    intelligence_base  INT  NOT NULL DEFAULT 10,
-    agilite_base       INT  NOT NULL DEFAULT 10
-);
-
-CREATE TABLE competence (
-    id_competence  SERIAL PRIMARY KEY,
-    nom            VARCHAR(80) NOT NULL,
-    description    TEXT,
-    type           VARCHAR(20) NOT NULL
-                   CHECK (type IN ('attaque','soin','buff','utilitaire')),
-    cout_mana      INT NOT NULL DEFAULT 0,
-    degats         INT NOT NULL DEFAULT 0
-);
+-- ============ Quiz d'Æther — schéma initial ============
 
 CREATE TABLE utilisateur (
     id_utilisateur  SERIAL PRIMARY KEY,
@@ -30,88 +10,66 @@ CREATE TABLE utilisateur (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE personnage (
-    id_personnage  SERIAL PRIMARY KEY,
-    nom            VARCHAR(80) NOT NULL,
-    niveau         INT NOT NULL DEFAULT 1 CHECK (niveau >= 1),
-    xp             INT NOT NULL DEFAULT 0,
-    pv_actuels     INT NOT NULL,
-    pv_max         INT NOT NULL,
-    or_pieces      INT NOT NULL DEFAULT 0,
-    histoire       TEXT,
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    id_utilisateur INT NOT NULL REFERENCES utilisateur(id_utilisateur) ON DELETE CASCADE,
-    id_classe      INT NOT NULL REFERENCES classe(id_classe)
+CREATE TABLE categorie (
+    id_categorie  SERIAL PRIMARY KEY,
+    libelle       VARCHAR(80) NOT NULL UNIQUE,
+    description   TEXT,
+    emoji         VARCHAR(8)
 );
 
-CREATE TABLE objet (
-    id_objet     SERIAL PRIMARY KEY,
-    nom          VARCHAR(80) NOT NULL,
-    description  TEXT,
-    type         VARCHAR(20) NOT NULL
-                 CHECK (type IN ('arme','armure','consommable','cle')),
-    effet        VARCHAR(120),
-    valeur       INT NOT NULL DEFAULT 0
+CREATE TABLE quiz (
+    id_quiz         SERIAL PRIMARY KEY,
+    theme           VARCHAR(120) NOT NULL,
+    difficulte      VARCHAR(20)  NOT NULL
+                    CHECK (difficulte IN ('facile','moyen','difficile')),
+    id_categorie    INT REFERENCES categorie(id_categorie),
+    id_utilisateur  INT NOT NULL REFERENCES utilisateur(id_utilisateur) ON DELETE CASCADE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE partie (
-    id_partie     SERIAL PRIMARY KEY,
-    titre         VARCHAR(120) NOT NULL,
-    statut        VARCHAR(20)  NOT NULL DEFAULT 'en_cours'
-                  CHECK (statut IN ('en_cours','terminee','abandonnee')),
-    theme         VARCHAR(80),
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    id_personnage INT NOT NULL REFERENCES personnage(id_personnage) ON DELETE CASCADE
+CREATE TABLE question (
+    id_question  SERIAL PRIMARY KEY,
+    id_quiz      INT NOT NULL REFERENCES quiz(id_quiz) ON DELETE CASCADE,
+    position     INT NOT NULL,
+    intitule     TEXT NOT NULL,
+    explication  TEXT,
+    UNIQUE (id_quiz, position)
 );
 
-CREATE TABLE tour (
-    id_tour        SERIAL PRIMARY KEY,
-    numero         INT NOT NULL,
-    action_joueur  TEXT,
-    narration_ia   TEXT NOT NULL,
-    etat_jeu       JSONB,          -- snapshot d'état renvoyé par l'IA
-    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    id_partie      INT NOT NULL REFERENCES partie(id_partie) ON DELETE CASCADE,
-    UNIQUE (id_partie, numero)
+CREATE TABLE choix (
+    id_choix      SERIAL PRIMARY KEY,
+    id_question   INT NOT NULL REFERENCES question(id_question) ON DELETE CASCADE,
+    position      INT NOT NULL,
+    texte         TEXT NOT NULL,
+    est_correcte  BOOLEAN NOT NULL DEFAULT false,
+    UNIQUE (id_question, position)
 );
 
-CREATE TABLE quete (
-    id_quete       SERIAL PRIMARY KEY,
-    titre          VARCHAR(120) NOT NULL,
-    description    TEXT,
-    statut         VARCHAR(20) NOT NULL DEFAULT 'active'
-                   CHECK (statut IN ('active','reussie','echouee')),
-    recompense_xp  INT NOT NULL DEFAULT 0,
-    recompense_or  INT NOT NULL DEFAULT 0,
-    id_partie      INT NOT NULL REFERENCES partie(id_partie) ON DELETE CASCADE
+CREATE TABLE session (
+    id_session      SERIAL PRIMARY KEY,
+    id_quiz         INT NOT NULL REFERENCES quiz(id_quiz) ON DELETE CASCADE,
+    id_utilisateur  INT NOT NULL REFERENCES utilisateur(id_utilisateur) ON DELETE CASCADE,
+    score           INT NOT NULL DEFAULT 0,
+    nb_bonnes       INT NOT NULL DEFAULT 0,
+    serie_courante  INT NOT NULL DEFAULT 0,
+    serie_max       INT NOT NULL DEFAULT 0,
+    termine         BOOLEAN NOT NULL DEFAULT false,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE pnj (
-    id_pnj      SERIAL PRIMARY KEY,
-    nom         VARCHAR(80) NOT NULL,
-    description TEXT,
-    attitude    VARCHAR(20) DEFAULT 'neutre',
-    id_partie   INT NOT NULL REFERENCES partie(id_partie) ON DELETE CASCADE
+CREATE TABLE reponse (
+    id_reponse   SERIAL PRIMARY KEY,
+    id_session   INT NOT NULL REFERENCES session(id_session) ON DELETE CASCADE,
+    id_question  INT NOT NULL REFERENCES question(id_question),
+    id_choix     INT REFERENCES choix(id_choix),
+    correcte     BOOLEAN NOT NULL,
+    temps_ms     INT NOT NULL,
+    points       INT NOT NULL,
+    UNIQUE (id_session, id_question)
 );
 
--- ===== Tables de jointure (associations N,N) =====
-CREATE TABLE inventaire (
-    id_personnage  INT NOT NULL REFERENCES personnage(id_personnage) ON DELETE CASCADE,
-    id_objet       INT NOT NULL REFERENCES objet(id_objet),
-    quantite       INT NOT NULL DEFAULT 1 CHECK (quantite > 0),
-    equipe         BOOLEAN NOT NULL DEFAULT false,
-    PRIMARY KEY (id_personnage, id_objet)
-);
-
-CREATE TABLE classe_competence (
-    id_classe      INT NOT NULL REFERENCES classe(id_classe) ON DELETE CASCADE,
-    id_competence  INT NOT NULL REFERENCES competence(id_competence) ON DELETE CASCADE,
-    niveau_requis  INT NOT NULL DEFAULT 1,
-    PRIMARY KEY (id_classe, id_competence)
-);
-
--- ===== Index utiles =====
-CREATE INDEX idx_personnage_user  ON personnage(id_utilisateur);
-CREATE INDEX idx_partie_perso     ON partie(id_personnage);
-CREATE INDEX idx_tour_partie      ON tour(id_partie);
+CREATE INDEX idx_question_quiz   ON question(id_quiz);
+CREATE INDEX idx_choix_question  ON choix(id_question);
+CREATE INDEX idx_session_user    ON session(id_utilisateur);
+CREATE INDEX idx_session_score   ON session(score DESC);
+CREATE INDEX idx_reponse_session ON reponse(id_session);

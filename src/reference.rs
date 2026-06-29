@@ -3,23 +3,21 @@ use serde::Serialize;
 
 use crate::{error::AppError, state::AppState};
 
-/// Une classe jouable (donnée de référence).
+/// Une catégorie de thème suggérée.
 #[derive(Serialize, sqlx::FromRow)]
-pub struct ClasseDto {
-    pub id_classe: i32,
-    pub nom: String,
+pub struct CategorieDto {
+    pub id_categorie: i32,
+    pub libelle: String,
     pub description: Option<String>,
-    pub pv_base: i32,
-    pub force_base: i32,
-    pub intelligence_base: i32,
-    pub agilite_base: i32,
+    pub emoji: Option<String>,
 }
 
-/// GET /classes — liste les classes disponibles (public).
-pub async fn classes(State(state): State<AppState>) -> Result<Json<Vec<ClasseDto>>, AppError> {
-    let rows = sqlx::query_as::<_, ClasseDto>(
-        "SELECT id_classe, nom, description, pv_base, force_base, intelligence_base, agilite_base
-         FROM classe ORDER BY id_classe",
+/// GET /categories — liste les catégories suggérées (public).
+pub async fn categories(
+    State(state): State<AppState>,
+) -> Result<Json<Vec<CategorieDto>>, AppError> {
+    let rows = sqlx::query_as::<_, CategorieDto>(
+        "SELECT id_categorie, libelle, description, emoji FROM categorie ORDER BY id_categorie",
     )
     .fetch_all(&state.pool)
     .await?;

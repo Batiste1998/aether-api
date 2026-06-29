@@ -1,6 +1,6 @@
 # aether-api
 
-Backend de **Chroniques d'Æther** — RPG textuel web dont le Maître du Jeu est propulsé par une IA (OpenAI GPT-4o).
+Backend de **Quiz d'Æther** — un jeu de quiz de culture générale dont les questions sont générées par une IA (OpenAI GPT-4o).
 
 Stack : **Rust** · [Axum](https://github.com/tokio-rs/axum) · [SQLx](https://github.com/launchbadge/sqlx) · PostgreSQL 16 · JWT · Argon2.
 
@@ -12,39 +12,47 @@ Stack : **Rust** · [Axum](https://github.com/tokio-rs/axum) · [SQLx](https://g
 ## Démarrage
 
 ```bash
-# 1. Lancer la base de données
-docker compose up -d
-
-# 2. Copier la configuration
-cp .env.example .env
-
-# 3. Lancer l'API (les migrations s'exécutent au démarrage)
-cargo run
+docker compose up -d            # PostgreSQL sur le port 5433
+cp .env.example .env            # puis renseigner OPENAI_API_KEY
+cargo run                       # migrations auto + API sur :8080
 ```
-
-L'API écoute sur `http://localhost:8080`.
 
 ```bash
 curl http://localhost:8080/health
-# {"service":"aether-api","status":"ok"}
 ```
+
+## Principales routes
+
+| Méthode | Route | Rôle |
+|---------|-------|------|
+| POST | `/auth/register`, `/auth/login` | Authentification (JWT) |
+| GET  | `/categories` | Catégories de thèmes suggérées |
+| POST | `/quiz` | Génère un quiz (IA) et ouvre une session |
+| POST | `/sessions/{id}/answers` | Enregistre une réponse, calcule le score |
+| POST | `/sessions/{id}/finish` | Clôt la session, renvoie le rang |
+| GET  | `/sessions` | Historique du joueur |
+| GET  | `/leaderboard` | Classement des meilleurs scores |
 
 ## Structure
 
 ```
 src/
 ├── main.rs        # bootstrap : config, pool DB, migrations, serveur
-├── config.rs      # configuration depuis l'environnement
-├── state.rs       # état partagé (pool, config)
-├── error.rs       # erreur applicative -> réponse HTTP JSON
-└── routes/        # handlers HTTP
-migrations/        # schéma SQL versionné (issu du MPD du cadrage)
+├── ai.rs          # génération de quiz via GPT-4o (sortie JSON structurée)
+├── quiz.rs        # génération, jeu, scoring, classement, historique
+├── rules.rs       # règles pures (scoring) + tests unitaires
+├── reference.rs   # catégories
+├── auth/          # inscription, connexion, JWT, extracteur AuthUser
+├── error.rs · config.rs · state.rs
+migrations/        # schéma SQL versionné (quiz, questions, choix, sessions…)
 ```
 
-## Feuille de route
+## Qualité
 
-- [x] Fondation : serveur, pool DB, migrations, `/health`
-- [x] Authentification (inscription / connexion, JWT, Argon2)
-- [x] CRUD personnage (isolé par utilisateur)
-- [x] Parties & boucle de jeu (Maître du Jeu GPT-4o, état persisté)
-- [ ] Frontend React
+```bash
+cargo fmt --all -- --check
+cargo clippy --all-targets -- -D warnings
+cargo test
+```
+
+CI GitHub Actions à chaque push (fmt, clippy, tests, build release).

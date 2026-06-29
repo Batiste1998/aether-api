@@ -1,41 +1,33 @@
 //! Règles de jeu pures (sans I/O), aisément testables.
 
-/// Niveau du personnage en fonction de son expérience (1 niveau tous les 100 XP).
-pub fn niveau_pour_xp(xp: i32) -> i32 {
-    1 + xp.max(0) / 100
+/// Durée allouée pour répondre à une question, en millisecondes.
+pub const TEMPS_PAR_QUESTION_MS: i32 = 15_000;
+
+/// Nombre de questions par quiz, borné entre 3 et 10.
+pub fn borne_nb_questions(n: i32) -> i32 {
+    n.clamp(3, 10)
 }
 
-/// PV maximum : base de la classe + 20 par niveau au-delà du premier.
-pub fn pv_max_pour(pv_base: i32, niveau: i32) -> i32 {
-    pv_base + (niveau.max(1) - 1) * 20
-}
-
-/// Normalise le type d'objet renvoyé par l'IA vers l'une des valeurs autorisées.
-pub fn normaliser_type_objet(t: Option<&str>) -> &'static str {
-    match t {
-        Some("arme") => "arme",
-        Some("armure") => "armure",
-        Some("cle") => "cle",
-        _ => "consommable",
-    }
-}
-
-/// Extrait le nombre de PV restaurés par un consommable depuis son texte d'effet.
-/// Renvoie 0 si l'effet ne concerne pas les points de vie.
-pub fn soin_depuis_effet(effet: &str) -> i32 {
-    let lower = effet.to_lowercase();
-    if !(lower.contains("pv") || lower.contains("vie")) {
+/// Points gagnés pour une réponse.
+///
+/// - 0 si la réponse est fausse.
+/// - Sinon : 500 points de base + jusqu'à 500 de bonus de rapidité
+///   + 50 par palier de série (plafonné à 10 d'affilée).
+pub fn points_reponse(correcte: bool, temps_ms: i32, serie: i32) -> i32 {
+    if !correcte {
         return 0;
     }
-    let mut num = String::new();
-    for ch in effet.chars() {
-        if ch.is_ascii_digit() {
-            num.push(ch);
-        } else if !num.is_empty() {
-            break;
-        }
-    }
-    num.parse().unwrap_or(0)
+    let temps = temps_ms.clamp(0, TEMPS_PAR_QUESTION_MS) as f64;
+    let ratio_restant = 1.0 - temps / TEMPS_PAR_QUESTION_MS as f64;
+    let base = 500.0;
+    let bonus_rapidite = 500.0 * ratio_restant;
+    let bonus_serie = serie.clamp(0, 10) as f64 * 50.0;
+    (base + bonus_rapidite + bonus_serie).round() as i32
+}
+
+/// Valide qu'une difficulté est reconnue.
+pub fn difficulte_valide(d: &str) -> bool {
+    matches!(d, "facile" | "moyen" | "difficile")
 }
 
 #[cfg(test)]
@@ -43,36 +35,42 @@ mod tests {
     use super::*;
 
     #[test]
-    fn niveau_progression() {
-        assert_eq!(niveau_pour_xp(0), 1);
-        assert_eq!(niveau_pour_xp(99), 1);
-        assert_eq!(niveau_pour_xp(100), 2);
-        assert_eq!(niveau_pour_xp(250), 3);
-        assert_eq!(niveau_pour_xp(-50), 1); // XP négative bornée
+    fn nb_questions_borne() {
+        assert_eq!(borne_nb_questions(1), 3);
+        assert_eq!(borne_nb_questions(5), 5);
+        assert_eq!(borne_nb_questions(50), 10);
     }
 
     #[test]
-    fn pv_max_augmente_avec_le_niveau() {
-        assert_eq!(pv_max_pour(100, 1), 100);
-        assert_eq!(pv_max_pour(100, 2), 120);
-        assert_eq!(pv_max_pour(130, 3), 170);
-        assert_eq!(pv_max_pour(100, 0), 100); // niveau borné à 1
+    fn reponse_fausse_zero() {
+        assert_eq!(points_reponse(false, 0, 5), 0);
     }
 
     #[test]
-    fn type_objet_normalise() {
-        assert_eq!(normaliser_type_objet(Some("arme")), "arme");
-        assert_eq!(normaliser_type_objet(Some("armure")), "armure");
-        assert_eq!(normaliser_type_objet(Some("cle")), "cle");
-        assert_eq!(normaliser_type_objet(Some("potion")), "consommable");
-        assert_eq!(normaliser_type_objet(None), "consommable");
+    fn reponse_instantanee_max() {
+        // Réponse immédiate, sans série : 500 base + 500 rapidité.
+        assert_eq!(points_reponse(true, 0, 0), 1000);
     }
 
     #[test]
-    fn soin_extrait_les_pv() {
-        assert_eq!(soin_depuis_effet("+30 PV"), 30);
-        assert_eq!(soin_depuis_effet("Restaure 25 points de vie"), 25);
-        assert_eq!(soin_depuis_effet("+5 force"), 0); // ne concerne pas les PV
-        assert_eq!(soin_depuis_effet(""), 0);
+    fn reponse_lente_base_seule() {
+        // Tout le temps consommé : plus de bonus de rapidité.
+        assert_eq!(points_reponse(true, TEMPS_PAR_QUESTION_MS, 0), 500);
+    }
+
+    #[test]
+    fn bonus_de_serie_plafonne() {
+        // Série de 4 -> +200 ; lent -> base 500 seule + 200 = 700.
+        assert_eq!(points_reponse(true, TEMPS_PAR_QUESTION_MS, 4), 700);
+        // Série énorme plafonnée à 10 -> +500.
+        assert_eq!(points_reponse(true, TEMPS_PAR_QUESTION_MS, 99), 1000);
+    }
+
+    #[test]
+    fn difficulte_reconnue() {
+        assert!(difficulte_valide("facile"));
+        assert!(difficulte_valide("moyen"));
+        assert!(difficulte_valide("difficile"));
+        assert!(!difficulte_valide("extreme"));
     }
 }

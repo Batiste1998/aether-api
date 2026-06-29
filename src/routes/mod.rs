@@ -8,9 +8,8 @@ pub mod health;
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health::health))
-        .route("/classes", get(crate::reference::classes))
+        .route("/categories", get(crate::reference::categories))
         .nest("/auth", crate::auth::router())
-        .nest("/personnages", crate::personnage::router())
-        .nest("/parties", crate::partie::router())
+        .merge(crate::quiz::router())
         .with_state(state)
 }
