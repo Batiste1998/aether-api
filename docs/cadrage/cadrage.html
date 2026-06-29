@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Document de cadrage — Quiz d'Æther</title>
+<style>
+  :root{
+    --ink:#1c1530; --ink-soft:#3a3450; --muted:#6b6480;
+    --arcane:#5b3ea8; --arcane-deep:#2a1a55; --gold:#b8902f; --gold-soft:#d9b85a;
+    --parch:#faf7f0; --line:#e2dced; --line-strong:#cbc2e0;
+    --green:#2f8f5b; --amber:#c98a1e; --red:#c0392b;
+    --code-bg:#1e1830; --code-fg:#e8e3f5;
+  }
+  @page{ size:A4; margin:18mm 16mm 20mm 16mm; @bottom-center{ content:counter(page); } }
+  *{ box-sizing:border-box; }
+  html{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body{ font-family:-apple-system,"Helvetica Neue","Segoe UI",Helvetica,Arial,sans-serif; color:var(--ink); font-size:10.4pt; line-height:1.55; margin:0; background:#fff; }
+  h1,h2,h3,h4{ font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif; color:var(--arcane-deep); line-height:1.2; font-weight:600; }
+
+  .cover{ height:257mm; display:flex; flex-direction:column; justify-content:space-between; page-break-after:always; position:relative;
+    background:radial-gradient(120% 80% at 50% -10%, rgba(91,62,168,.18), transparent 60%), linear-gradient(180deg,#fbfaf6 0%,#f4f0fa 100%); border:1px solid var(--line); }
+  .cover .top-rule{ height:6mm; background:linear-gradient(90deg,var(--arcane-deep),var(--arcane),var(--gold)); }
+  .cover .crest{ margin:26mm auto 0; width:80mm;height:80mm; display:flex;align-items:center;justify-content:center; }
+  .cover .crest svg{ width:100%; height:100%; }
+  .cover .titlewrap{ text-align:center; padding:0 18mm; }
+  .cover .kicker{ letter-spacing:.42em; text-transform:uppercase; font-size:9pt; color:var(--gold); font-weight:700; margin-bottom:6mm; }
+  .cover h1{ font-size:36pt; margin:0 0 4mm; color:var(--arcane-deep); }
+  .cover .subtitle{ font-size:13pt; color:var(--ink-soft); font-style:italic; font-family:"Iowan Old Style",Georgia,serif; }
+  .cover .meta{ margin:0 18mm 22mm; border-top:1px solid var(--line-strong); padding-top:8mm; display:grid; grid-template-columns:1fr 1fr; gap:4mm 10mm; font-size:10pt; }
+  .cover .meta .lbl{ color:var(--muted); text-transform:uppercase; letter-spacing:.12em; font-size:8pt; }
+  .cover .meta .val{ color:var(--ink); font-weight:600; }
+  .cover .bottom-rule{ height:6mm; background:linear-gradient(90deg,var(--gold),var(--arcane),var(--arcane-deep)); }
+
+  section{ page-break-before:always; }
+  .lead{ font-size:11pt; color:var(--ink-soft); }
+  h2.section-title{ font-size:21pt; margin:0 0 2mm; padding-bottom:3mm; border-bottom:2px solid var(--gold); }
+  h2 .num{ color:var(--gold); font-size:15pt; margin-right:4mm; vertical-align:1mm; }
+  h3{ font-size:13.5pt; margin:8mm 0 2mm; color:var(--arcane); }
+  h4{ font-size:11pt; margin:5mm 0 1mm; color:var(--ink); }
+  p{ margin:0 0 2.6mm; }
+  ul,ol{ margin:0 0 3mm; padding-left:6mm; }
+  li{ margin-bottom:1mm; }
+  strong{ color:var(--ink); }
+  a{ color:var(--arcane); text-decoration:none; border-bottom:1px solid var(--line-strong); }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:6mm; }
+
+  table{ width:100%; border-collapse:collapse; margin:3mm 0 5mm; font-size:9.6pt; }
+  th,td{ text-align:left; padding:2.2mm 3mm; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:#f3eefb; color:var(--arcane-deep); font-size:8.6pt; text-transform:uppercase; letter-spacing:.06em; border-bottom:1.5px solid var(--line-strong); }
+  tr:nth-child(even) td{ background:#fbfaff; }
+  table.tight td,table.tight th{ padding:1.8mm 2.5mm; }
+  .pill{ display:inline-block; padding:.4mm 2.4mm; border-radius:10px; font-size:8pt; font-weight:700; white-space:nowrap; }
+  .p-must{ background:#fbe6e3; color:var(--red); }
+  .p-should{ background:#fcf2dd; color:var(--amber); }
+  .p-nice{ background:#e3f3ea; color:var(--green); }
+
+  .callout{ border-left:3px solid var(--arcane); background:#f6f2fc; padding:3mm 4mm; margin:4mm 0; border-radius:0 4px 4px 0; font-size:9.6pt; }
+  .callout.gold{ border-color:var(--gold); background:#fdf8ec; }
+
+  pre{ background:var(--code-bg); color:var(--code-fg); padding:4mm 5mm; border-radius:5px; overflow:auto; font-family:"SF Mono",Menlo,Consolas,monospace; font-size:8.4pt; line-height:1.5; margin:3mm 0 5mm; white-space:pre-wrap; }
+  pre .k{ color:#c79bff; } pre .t{ color:#7fd8c4; } pre .c{ color:#8a82a8; font-style:italic; } pre .s{ color:#e6c07b; } pre .pk{ color:var(--gold-soft); font-weight:700; }
+  code.inl{ background:#efeaf8; color:var(--arcane-deep); padding:.3mm 1.5mm; border-radius:3px; font-family:"SF Mono",Menlo,monospace; font-size:8.8pt; border-bottom:none; }
+  .tree{ background:#faf8ff; border:1px solid var(--line); border-radius:5px; padding:4mm 5mm; font-family:"SF Mono",Menlo,monospace; font-size:9pt; line-height:1.7; color:var(--ink-soft); white-space:pre; margin:3mm 0 5mm; }
+  .tree b{ color:var(--arcane-deep); }
+
+  figure{ margin:3mm 0 6mm; text-align:center; }
+  figure svg{ width:100%; height:auto; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  figcaption{ font-size:8.6pt; color:var(--muted); margin-top:2mm; font-style:italic; }
+  .wf-grid{ display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
+  .wf-grid figure{ margin:0; }
+
+  .toc{ font-size:10.5pt; }
+  .toc .row{ display:flex; justify-content:space-between; padding:1.6mm 0; border-bottom:1px dotted var(--line-strong); }
+  .toc .row .n{ color:var(--gold); font-weight:700; margin-right:3mm; }
+  .toc .sub{ padding-left:8mm; font-size:9.5pt; color:var(--ink-soft); }
+  .legend{ font-size:8.4pt; color:var(--muted); }
+  .center{ text-align:center; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="top-rule"></div>
+  <div>
+    <div class="crest">
+      <svg viewBox="0 0 200 200" fill="none">
+        <circle cx="100" cy="100" r="92" stroke="#b8902f" stroke-width="2"/>
+        <circle cx="100" cy="100" r="80" stroke="#5b3ea8" stroke-width="1" stroke-dasharray="3 5"/>
+        <!-- speech / question bubble -->
+        <rect x="52" y="62" width="96" height="64" rx="12" fill="#f4f0fa" stroke="#2a1a55" stroke-width="2.4"/>
+        <path d="M76 126 L76 144 L96 126 Z" fill="#f4f0fa" stroke="#2a1a55" stroke-width="2.4"/>
+        <text x="100" y="106" font-size="40" fill="#5b3ea8" text-anchor="middle" font-family="Georgia,serif" font-weight="700">?</text>
+        <!-- spark -->
+        <path d="M100 34 l4 12 12 4 -12 4 -4 12 -4 -12 -12 -4 12 -4 z" fill="#b8902f"/>
+        <circle cx="150" cy="150" r="3" fill="#b8902f"/>
+        <circle cx="50" cy="150" r="2.5" fill="#5b3ea8"/>
+      </svg>
+    </div>
+    <div class="titlewrap">
+      <div class="kicker">Document de cadrage</div>
+      <h1>Quiz d'Æther</h1>
+      <div class="subtitle">Le quiz de culture générale où l'intelligence artificielle crée les questions.</div>
+    </div>
+  </div>
+  <div class="meta">
+    <div><div class="lbl">Module</div><div class="val">Développement d'application front / back</div></div>
+    <div><div class="lbl">Formation</div><div class="val">M2 Développement — Ynov</div></div>
+    <div><div class="lbl">Auteur</div><div class="val">Batiste Blactot</div></div>
+    <div><div class="lbl">Date de rendu</div><div class="val">24/04/2026</div></div>
+    <div style="grid-column:1 / -1"><div class="lbl">Dépôts GitHub</div><div class="val">
+      Frontend → <span style="color:var(--arcane)">github.com/Batiste1998/aether-front</span> &nbsp;·&nbsp;
+      Backend → <span style="color:var(--arcane)">github.com/Batiste1998/aether-api</span>
+    </div></div>
+  </div>
+  <div class="bottom-rule"></div>
+</div>
+
+<!-- ============ TOC ============ -->
+<section style="page-break-before:auto">
+  <h2 class="section-title"><span class="num">·</span>Sommaire</h2>
+  <div class="toc">
+    <div class="row"><span><span class="n">1</span>Brief projet</span><span></span></div>
+    <div class="row sub"><span>1.1 Présentation &nbsp;·&nbsp; 1.2 Arborescence &nbsp;·&nbsp; 1.3 Wireframes &nbsp;·&nbsp; 1.4 Fonctionnalités</span><span></span></div>
+    <div class="row"><span><span class="n">2</span>Modélisation de la base de données</span><span></span></div>
+    <div class="row sub"><span>2.1 MCD (Merise) &nbsp;·&nbsp; 2.2 MLD &nbsp;·&nbsp; 2.3 MPD — script SQL PostgreSQL</span><span></span></div>
+    <div class="row"><span><span class="n">3</span>Stack technique &amp; justifications</span><span></span></div>
+    <div class="row sub"><span>3.1 Frontend &nbsp;·&nbsp; 3.2 Backend (Rust) &nbsp;·&nbsp; 3.3 Base de données &nbsp;·&nbsp; 3.4 Outils &amp; infrastructure</span><span></span></div>
+    <div class="row"><span><span class="n">4</span>Fonctionnalité IA — la génération de quiz</span><span></span></div>
+    <div class="row sub"><span>4.1 Description &nbsp;·&nbsp; 4.2 Choix technique &nbsp;·&nbsp; 4.3 Flux de données</span><span></span></div>
+  </div>
+  <div class="callout gold" style="margin-top:14mm">
+    <strong>En une phrase.</strong> <em>Quiz d'Æther</em> est un jeu de quiz de culture générale jouable dans le
+    navigateur : le joueur choisit un thème — une catégorie ou un sujet libre — et une <strong>IA (GPT-4o)
+    génère un questionnaire à choix multiples</strong> sur mesure. On répond contre le chrono, on enchaîne les
+    bonnes réponses pour grimper au classement. Le projet couvre un <strong>frontend React/TypeScript</strong>,
+    une <strong>API Rust</strong> et une <strong>base PostgreSQL</strong> relationnelle.
+  </div>
+</section>
+
+<!-- ============ 1. BRIEF ============ -->
+<section>
+  <h2 class="section-title"><span class="num">1</span>Brief projet</h2>
+
+  <h3>1.1 Présentation générale</h3>
+
+  <h4>Nom du projet</h4>
+  <p><strong>Quiz d'Æther</strong> — nom de code <code class="inl">aether</code>.</p>
+
+  <h4>Description courte</h4>
+  <p>
+    Quiz d'Æther est une application web de quiz de culture générale. Le joueur choisit un thème (parmi des
+    catégories proposées ou en saisissant un sujet de son choix), une difficulté et un nombre de questions ;
+    une intelligence artificielle génère alors un questionnaire à choix multiples inédit. Chaque question est
+    chronométrée : plus on répond vite et plus on enchaîne les bonnes réponses, plus le score grimpe. À la fin
+    de la partie, le joueur voit son récapitulatif et se compare aux autres dans un classement. Comme les
+    questions sont générées à la volée, le nombre de quiz possibles est virtuellement infini.
+  </p>
+
+  <h4>Problème résolu</h4>
+  <p>
+    Les quiz classiques (applications, jeux de société) reposent sur une banque de questions <strong>finie</strong> :
+    on finit par retomber sur les mêmes, et les thèmes disponibles sont limités à ce que les concepteurs ont
+    prévu. <strong>Quiz d'Æther lève cette limite</strong> : l'IA produit un quiz unique sur <em>n'importe quel</em>
+    sujet, à la demande. La rejouabilité est totale et l'outil devient aussi un moyen ludique de réviser un
+    domaine précis.
+  </p>
+
+  <h4>Public cible</h4>
+  <ul>
+    <li><strong>Amateurs de quiz et de trivia</strong> (Trivial Pursuit, Kahoot, HQ Trivia), 15–40 ans, qui cherchent des parties courtes et rejouables.</li>
+    <li><strong>Joueurs occasionnels</strong> voulant se distraire quelques minutes, sans installation, sur navigateur.</li>
+    <li><strong>Étudiants &amp; formateurs</strong> souhaitant réviser ou animer une session sur un thème précis.</li>
+  </ul>
+
+  <h3>1.2 Arborescence (Arbo)</h3>
+  <p>Structure de navigation de l'application. Les sections grisées nécessitent une authentification.</p>
+  <div class="tree"><b>Accueil (landing publique)</b>
+│   présentation du concept · CTA « Jouer »
+│
+├── <b>Authentification</b>
+│   ├── Connexion
+│   └── Inscription
+│
+├── <b>Lobby / Dashboard</b>  <span style="color:#9a93b3">(authentifié)</span>
+│   ├── Choix d'une catégorie  (ou thème libre)
+│   ├── Réglages               → difficulté · nombre de questions
+│   └── Mes dernières parties  (historique)
+│
+├── <b>Partie (écran de quiz)</b>  <span style="color:#9a93b3">(cœur de l'app)</span>
+│   ├── Question chronométrée  → 4 propositions
+│   ├── Retour immédiat        → bonne réponse · explication · points
+│   └── Écran de résultats     → score · réussite · rang
+│
+└── <b>Classement</b>
+    └── Meilleurs scores, tous thèmes confondus</div>
+
+  <h3>1.3 Wireframes</h3>
+  <p>Maquettes fil-de-fer basse fidélité des cinq écrans principaux (format vectoriel, exportables vers Figma).</p>
+
+  <div class="wf-grid">
+    <!-- WF1 Landing -->
+    <figure>
+      <svg viewBox="0 0 360 250">
+        <rect x="0" y="0" width="360" height="250" fill="#fff"/>
+        <rect x="0" y="0" width="360" height="26" fill="#efeaf8"/>
+        <circle cx="18" cy="13" r="6" fill="#5b3ea8"/><rect x="30" y="10" width="60" height="7" rx="3" fill="#cbc2e0"/>
+        <rect x="250" y="8" width="44" height="11" rx="5" fill="#e2dced"/><rect x="300" y="8" width="48" height="11" rx="5" fill="#5b3ea8"/>
+        <text x="180" y="78" font-size="20" fill="#2a1a55" text-anchor="middle" font-family="Georgia">?</text>
+        <rect x="120" y="92" width="120" height="14" rx="3" fill="#2a1a55"/>
+        <rect x="90" y="116" width="180" height="8" rx="3" fill="#cbc2e0"/>
+        <rect x="100" y="130" width="160" height="8" rx="3" fill="#cbc2e0"/>
+        <rect x="135" y="150" width="90" height="20" rx="6" fill="#b8902f"/>
+        <rect x="40" y="190" width="84" height="42" rx="5" fill="#faf8ff" stroke="#e2dced"/>
+        <rect x="138" y="190" width="84" height="42" rx="5" fill="#faf8ff" stroke="#e2dced"/>
+        <rect x="236" y="190" width="84" height="42" rx="5" fill="#faf8ff" stroke="#e2dced"/>
+      </svg>
+      <figcaption>① Accueil / landing — concept, CTA « Jouer », trois arguments.</figcaption>
+    </figure>
+
+    <!-- WF2 Auth -->
+    <figure>
+      <svg viewBox="0 0 360 250">
+        <rect x="0" y="0" width="360" height="250" fill="#fff"/>
+        <rect x="100" y="44" width="160" height="162" rx="8" fill="#faf8ff" stroke="#cbc2e0"/>
+        <rect x="135" y="64" width="90" height="11" rx="3" fill="#2a1a55"/>
+        <rect x="120" y="92" width="120" height="9" rx="3" fill="#cbc2e0"/><rect x="120" y="104" width="120" height="18" rx="4" fill="#fff" stroke="#cbc2e0"/>
+        <rect x="120" y="130" width="120" height="9" rx="3" fill="#cbc2e0"/><rect x="120" y="142" width="120" height="18" rx="4" fill="#fff" stroke="#cbc2e0"/>
+        <rect x="120" y="170" width="120" height="16" rx="5" fill="#b8902f"/>
+        <text x="180" y="182" font-size="8" fill="#fff" text-anchor="middle">Se connecter</text>
+        <text x="180" y="200" font-size="7.5" fill="#9a93b3" text-anchor="middle">Pas de compte ? S'inscrire</text>
+      </svg>
+      <figcaption>② Connexion / Inscription — formulaire centré.</figcaption>
+    </figure>
+
+    <!-- WF3 Lobby -->
+    <figure>
+      <svg viewBox="0 0 360 250">
+        <rect x="0" y="0" width="360" height="250" fill="#fff"/>
+        <rect x="0" y="0" width="360" height="24" fill="#2a1a55"/>
+        <rect x="12" y="9" width="60" height="7" rx="3" fill="#d9b85a"/>
+        <text x="348" y="15" font-size="7" fill="#cbc2e0" text-anchor="end">Jouer · Classement</text>
+        <rect x="20" y="36" width="110" height="10" rx="3" fill="#2a1a55"/>
+        <!-- category grid 4x2 -->
+        <g fill="#faf8ff" stroke="#cbc2e0">
+          <rect x="20" y="56" width="74" height="40" rx="5"/><rect x="102" y="56" width="74" height="40" rx="5"/>
+          <rect x="184" y="56" width="74" height="40" rx="5"/><rect x="266" y="56" width="74" height="40" rx="5"/>
+          <rect x="20" y="102" width="74" height="40" rx="5"/><rect x="102" y="102" width="74" height="40" rx="5"/>
+          <rect x="184" y="102" width="74" height="40" rx="5" fill="#f0e9fb" stroke="#5b3ea8"/><rect x="266" y="102" width="74" height="40" rx="5"/>
+        </g>
+        <rect x="20" y="154" width="320" height="18" rx="4" fill="#fff" stroke="#cbc2e0"/>
+        <text x="26" y="166" font-size="7" fill="#9a93b3">…ou un thème personnalisé</text>
+        <rect x="20" y="182" width="40" height="16" rx="4" fill="#fdf8ec" stroke="#d9b85a"/>
+        <rect x="64" y="182" width="40" height="16" rx="4" fill="#fff" stroke="#e2dced"/>
+        <rect x="108" y="182" width="40" height="16" rx="4" fill="#fff" stroke="#e2dced"/>
+        <rect x="248" y="182" width="92" height="16" rx="5" fill="#b8902f"/>
+        <text x="294" y="194" font-size="8" fill="#fff" text-anchor="middle">Lancer le quiz</text>
+        <rect x="20" y="210" width="320" height="14" rx="4" fill="#faf8ff" stroke="#e2dced"/>
+      </svg>
+      <figcaption>③ Lobby — grille de catégories, thème libre, difficulté &amp; lancement.</figcaption>
+    </figure>
+
+    <!-- WF5 Results -->
+    <figure>
+      <svg viewBox="0 0 360 250">
+        <rect x="0" y="0" width="360" height="250" fill="#fff"/>
+        <text x="180" y="44" font-size="20" text-anchor="middle">🏆</text>
+        <rect x="120" y="54" width="120" height="12" rx="3" fill="#2a1a55"/>
+        <rect x="90" y="78" width="180" height="50" rx="8" fill="#fdf8ec" stroke="#d9b85a"/>
+        <text x="180" y="110" font-size="22" fill="#8a6a13" text-anchor="middle" font-weight="700">1488</text>
+        <rect x="60" y="138" width="76" height="44" rx="6" fill="#faf8ff" stroke="#e2dced"/>
+        <rect x="142" y="138" width="76" height="44" rx="6" fill="#faf8ff" stroke="#e2dced"/>
+        <rect x="224" y="138" width="76" height="44" rx="6" fill="#faf8ff" stroke="#e2dced"/>
+        <text x="98" y="162" font-size="11" fill="#2a1a55" text-anchor="middle">2/3</text>
+        <text x="180" y="162" font-size="11" fill="#2a1a55" text-anchor="middle">67%</text>
+        <text x="262" y="162" font-size="11" fill="#2a1a55" text-anchor="middle">#2</text>
+        <rect x="110" y="196" width="64" height="18" rx="5" fill="#b8902f"/>
+        <rect x="186" y="196" width="64" height="18" rx="5" fill="#fff" stroke="#cbc2e0"/>
+      </svg>
+      <figcaption>⑤ Résultats — score, réussite, rang, puis « Rejouer » / « Classement ».</figcaption>
+    </figure>
+  </div>
+
+  <figure>
+    <!-- WF4 Quiz screen (wide, the main view) -->
+    <svg viewBox="0 0 720 300">
+      <rect x="0" y="0" width="720" height="300" fill="#fff"/>
+      <rect x="0" y="0" width="720" height="28" fill="#2a1a55"/>
+      <rect x="16" y="10" width="90" height="8" rx="3" fill="#d9b85a"/>
+      <text x="700" y="18" font-size="8" fill="#cbc2e0" text-anchor="end">Jouer · Classement · Déconnexion</text>
+      <!-- progress + score -->
+      <text x="40" y="58" font-size="9" fill="#6b6480">Question 2/3</text>
+      <text x="610" y="58" font-size="9" fill="#8a6a13" text-anchor="end">🔥 série x2</text>
+      <text x="680" y="58" font-size="9" fill="#2a1a55" text-anchor="end" font-weight="700">703 pts</text>
+      <!-- timer bar -->
+      <rect x="40" y="66" width="640" height="8" rx="4" fill="#e2dced"/>
+      <rect x="40" y="66" width="380" height="8" rx="4" fill="#5b3ea8"/>
+      <!-- question -->
+      <rect x="40" y="92" width="430" height="10" rx="3" fill="#2a1a55"/>
+      <rect x="40" y="108" width="320" height="10" rx="3" fill="#2a1a55"/>
+      <!-- 4 choices 2x2 -->
+      <g>
+        <rect x="40" y="140" width="312" height="44" rx="8" fill="#f4f0fa" stroke="#cbc2e0"/>
+        <rect x="368" y="140" width="312" height="44" rx="8" fill="#f4f0fa" stroke="#cbc2e0"/>
+        <rect x="40" y="196" width="312" height="44" rx="8" fill="#e3f3ea" stroke="#2f8f5b" stroke-width="1.5"/>
+        <rect x="368" y="196" width="312" height="44" rx="8" fill="#f4f0fa" stroke="#cbc2e0"/>
+        <rect x="56" y="158" width="120" height="8" rx="3" fill="#3a3450"/>
+        <rect x="384" y="158" width="120" height="8" rx="3" fill="#3a3450"/>
+        <rect x="56" y="214" width="120" height="8" rx="3" fill="#1f6b40"/>
+        <rect x="384" y="214" width="120" height="8" rx="3" fill="#3a3450"/>
+      </g>
+      <!-- feedback -->
+      <rect x="40" y="252" width="640" height="34" rx="6" fill="#faf8ff" stroke="#e2dced"/>
+      <text x="56" y="266" font-size="8" fill="#1f6b40">✓ Bonne réponse !</text>
+      <text x="664" y="266" font-size="8" fill="#8a6a13" text-anchor="end">+703 pts</text>
+      <rect x="56" y="272" width="380" height="6" rx="3" fill="#cbc2e0"/>
+    </svg>
+    <figcaption>④ Écran de quiz (vue principale) — progression &amp; score, chrono, question, 4 propositions, retour immédiat (bonne réponse en vert).</figcaption>
+  </figure>
+
+  <h3>1.4 Liste des fonctionnalités</h3>
+  <table class="tight">
+    <thead><tr><th style="width:18%">Priorité</th><th style="width:26%">Fonctionnalité</th><th style="width:40%">Description</th><th style="width:16%">Rôle</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p-must">Must have</span></td><td>Inscription / Connexion</td><td>Création de compte, authentification, session sécurisée (JWT).</td><td>Tous</td></tr>
+      <tr><td><span class="pill p-must">Must have</span></td><td>Choix du thème</td><td>Catégorie proposée ou thème libre, difficulté, nombre de questions.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-must">Must have</span></td><td>Génération du quiz par IA</td><td>GPT-4o produit un QCM inédit sur le thème choisi. <strong>(cf. §4)</strong></td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-must">Must have</span></td><td>Jouer une partie</td><td>Questions chronométrées, choix unique, calcul du score côté serveur.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-must">Must have</span></td><td>Retour &amp; explication</td><td>Bonne réponse révélée + explication courte après chaque question.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-must">Must have</span></td><td>Classement</td><td>Meilleurs scores, tous thèmes confondus.</td><td>Tous</td></tr>
+      <tr><td><span class="pill p-should">Should have</span></td><td>Bonus de rapidité &amp; série</td><td>Plus de points si on répond vite et qu'on enchaîne les bonnes réponses.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-should">Should have</span></td><td>Historique des parties</td><td>Liste des quiz joués et scores obtenus.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-should">Should have</span></td><td>Niveaux de difficulté</td><td>Facile / Moyen / Difficile, pris en compte dans le prompt IA.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-nice">Nice to have</span></td><td>Quiz multijoueur</td><td>Salles en temps réel, plusieurs joueurs sur le même quiz (websockets).</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-nice">Nice to have</span></td><td>Quiz quotidien</td><td>Un quiz du jour partagé par tous, avec classement dédié.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-nice">Nice to have</span></td><td>Partage de score</td><td>Lien / image de résultat partageable sur les réseaux.</td><td>Joueur</td></tr>
+      <tr><td><span class="pill p-nice">Nice to have</span></td><td>Back-office d'administration</td><td>Gestion des catégories et modération des contenus.</td><td>Admin</td></tr>
+    </tbody>
+  </table>
+  <p class="legend">
+    <span class="pill p-must">Must have</span> indispensable au MVP &nbsp;·&nbsp;
+    <span class="pill p-should">Should have</span> important, non bloquant &nbsp;·&nbsp;
+    <span class="pill p-nice">Nice to have</span> bonus si le temps le permet.
+  </p>
+</section>
+
+<!-- ============ 2. BDD ============ -->
+<section>
+  <h2 class="section-title"><span class="num">2</span>Modélisation de la base de données</h2>
+  <p class="lead">Les trois niveaux de modélisation Merise : conceptuel (MCD), logique (MLD) et physique (MPD).</p>
+
+  <h3>2.1 MCD — Modèle Conceptuel de Données</h3>
+  <p>
+    Schéma Merise : rectangles = <strong>entités</strong>, ovales = <strong>associations</strong>, chiffres = <strong>cardinalités</strong>.
+    Le <em>quiz</em> est l'entité centrale : il regroupe des questions (chacune avec ses choix) et il est joué au
+    sein de <em>sessions</em>, dont chaque <em>réponse</em> référence une question et le choix sélectionné.
+  </p>
+
+  <figure>
+    <svg viewBox="0 0 820 560" font-family="Helvetica,Arial,sans-serif">
+      <defs><style>
+        .ent{ fill:#f4f0fa; stroke:#5b3ea8; stroke-width:1.6; }
+        .enth{ fill:#5b3ea8; }
+        .eth{ fill:#fff; font-size:10px; font-weight:700; }
+        .attr{ fill:#3a3450; font-size:8px; }
+        .pkk{ fill:#2a1a55; font-size:8px; font-weight:700; }
+        .assoc{ fill:#fdf8ec; stroke:#b8902f; stroke-width:1.3; }
+        .ast{ fill:#8a6a13; font-size:8px; font-weight:700; }
+        .ln{ stroke:#9a93b3; stroke-width:1.2; fill:none; }
+        .card{ fill:#2a1a55; font-size:7.5px; font-weight:700; }
+      </style></defs>
+
+      <!-- CATEGORIE -->
+      <g>
+        <rect class="ent" x="30" y="40" width="120" height="66" rx="4"/><rect class="enth" x="30" y="40" width="120" height="15" rx="4"/><rect class="enth" x="30" y="47" width="120" height="8"/>
+        <text class="eth" x="90" y="51" text-anchor="middle">CATEGORIE</text>
+        <text class="pkk" x="38" y="68">id_categorie</text><text class="attr" x="38" y="80">libelle</text><text class="attr" x="38" y="92">emoji</text>
+      </g>
+      <!-- QUIZ -->
+      <g>
+        <rect class="ent" x="290" y="30" width="130" height="86" rx="4"/><rect class="enth" x="290" y="30" width="130" height="15" rx="4"/><rect class="enth" x="290" y="37" width="130" height="8"/>
+        <text class="eth" x="355" y="41" text-anchor="middle">QUIZ</text>
+        <text class="pkk" x="298" y="58">id_quiz</text><text class="attr" x="298" y="70">theme</text><text class="attr" x="298" y="82">difficulte</text><text class="attr" x="298" y="94">created_at</text>
+      </g>
+      <!-- QUESTION -->
+      <g>
+        <rect class="ent" x="560" y="30" width="130" height="80" rx="4"/><rect class="enth" x="560" y="30" width="130" height="15" rx="4"/><rect class="enth" x="560" y="37" width="130" height="8"/>
+        <text class="eth" x="625" y="41" text-anchor="middle">QUESTION</text>
+        <text class="pkk" x="568" y="58">id_question</text><text class="attr" x="568" y="70">position</text><text class="attr" x="568" y="82">intitule</text><text class="attr" x="568" y="94">explication</text>
+      </g>
+      <!-- CHOIX -->
+      <g>
+        <rect class="ent" x="690" y="230" width="118" height="80" rx="4"/><rect class="enth" x="690" y="230" width="118" height="15" rx="4"/><rect class="enth" x="690" y="237" width="118" height="8"/>
+        <text class="eth" x="749" y="241" text-anchor="middle">CHOIX</text>
+        <text class="pkk" x="698" y="258">id_choix</text><text class="attr" x="698" y="270">position</text><text class="attr" x="698" y="282">texte</text><text class="attr" x="698" y="294">est_correcte</text>
+      </g>
+      <!-- UTILISATEUR -->
+      <g>
+        <rect class="ent" x="30" y="370" width="120" height="80" rx="4"/><rect class="enth" x="30" y="370" width="120" height="15" rx="4"/><rect class="enth" x="30" y="377" width="120" height="8"/>
+        <text class="eth" x="90" y="381" text-anchor="middle">UTILISATEUR</text>
+        <text class="pkk" x="38" y="398">id_utilisateur</text><text class="attr" x="38" y="410">pseudo</text><text class="attr" x="38" y="422">email</text><text class="attr" x="38" y="434">mot_de_passe</text>
+      </g>
+      <!-- SESSION -->
+      <g>
+        <rect class="ent" x="290" y="370" width="135" height="92" rx="4"/><rect class="enth" x="290" y="370" width="135" height="15" rx="4"/><rect class="enth" x="290" y="377" width="135" height="8"/>
+        <text class="eth" x="357" y="381" text-anchor="middle">SESSION</text>
+        <text class="pkk" x="298" y="398">id_session</text><text class="attr" x="298" y="410">score</text><text class="attr" x="298" y="422">nb_bonnes · serie_max</text><text class="attr" x="298" y="434">termine</text>
+      </g>
+      <!-- REPONSE -->
+      <g>
+        <rect class="ent" x="560" y="380" width="150" height="80" rx="4"/><rect class="enth" x="560" y="380" width="150" height="15" rx="4"/><rect class="enth" x="560" y="387" width="150" height="8"/>
+        <text class="eth" x="635" y="391" text-anchor="middle">REPONSE</text>
+        <text class="pkk" x="568" y="408">id_reponse</text><text class="attr" x="568" y="420">correcte</text><text class="attr" x="568" y="432">temps_ms · points</text>
+      </g>
+
+      <!-- ===== Associations ===== -->
+      <!-- Classe : CATEGORIE - QUIZ -->
+      <line class="ln" x1="150" y1="73" x2="190" y2="73"/>
+      <ellipse class="assoc" cx="225" cy="73" rx="34" ry="15"/><text class="ast" x="225" y="76" text-anchor="middle">Classe</text>
+      <line class="ln" x1="259" y1="73" x2="290" y2="73"/>
+      <text class="card" x="156" y="68">0,N</text><text class="card" x="266" y="68">0,1</text>
+
+      <!-- Contient : QUIZ - QUESTION -->
+      <line class="ln" x1="420" y1="62" x2="455" y2="62"/>
+      <ellipse class="assoc" cx="490" cy="62" rx="34" ry="15"/><text class="ast" x="490" y="65" text-anchor="middle">Contient</text>
+      <line class="ln" x1="524" y1="62" x2="560" y2="62"/>
+      <text class="card" x="426" y="57">1,N</text><text class="card" x="532" y="57">1,1</text>
+
+      <!-- Propose : QUESTION - CHOIX -->
+      <line class="ln" x1="660" y1="110" x2="700" y2="200"/>
+      <ellipse class="assoc" cx="690" cy="170" rx="36" ry="15"/><text class="ast" x="690" y="173" text-anchor="middle">Propose</text>
+      <line class="ln" x1="710" y1="200" x2="730" y2="230"/>
+      <text class="card" x="650" y="120">1,N</text><text class="card" x="724" y="222">1,1</text>
+
+      <!-- Crée : UTILISATEUR - QUIZ -->
+      <path class="ln" d="M120 370 Q150 230 290 110"/>
+      <ellipse class="assoc" cx="180" cy="240" rx="30" ry="15"/><text class="ast" x="180" y="243" text-anchor="middle">Crée</text>
+      <text class="card" x="120" y="360">1,N</text><text class="card" x="276" y="120">1,1</text>
+
+      <!-- Joue : UTILISATEUR - SESSION -->
+      <line class="ln" x1="150" y1="420" x2="200" y2="420"/>
+      <ellipse class="assoc" cx="235" cy="420" rx="30" ry="15"/><text class="ast" x="235" y="423" text-anchor="middle">Joue</text>
+      <line class="ln" x1="265" y1="420" x2="290" y2="420"/>
+      <text class="card" x="156" y="414">1,N</text><text class="card" x="270" y="414">1,1</text>
+
+      <!-- Porte sur : QUIZ - SESSION -->
+      <line class="ln" x1="355" y1="116" x2="355" y2="350"/>
+      <ellipse class="assoc" cx="355" cy="240" rx="44" ry="15"/><text class="ast" x="355" y="243" text-anchor="middle">Porte sur</text>
+      <text class="card" x="360" y="130">1,N</text><text class="card" x="360" y="346">1,1</text>
+
+      <!-- Concerne : QUESTION - REPONSE -->
+      <line class="ln" x1="625" y1="110" x2="635" y2="370"/>
+      <ellipse class="assoc" cx="630" cy="245" rx="40" ry="15"/><text class="ast" x="630" y="248" text-anchor="middle">Concerne</text>
+      <text class="card" x="600" y="124">1,N</text><text class="card" x="600" y="366">1,1</text>
+
+      <!-- Comporte : SESSION - REPONSE -->
+      <line class="ln" x1="425" y1="420" x2="455" y2="420"/>
+      <ellipse class="assoc" cx="495" cy="420" rx="40" ry="15"/><text class="ast" x="495" y="423" text-anchor="middle">Comporte</text>
+      <line class="ln" x1="535" y1="420" x2="560" y2="420"/>
+      <text class="card" x="431" y="414">1,N</text><text class="card" x="540" y="414">1,1</text>
+
+      <!-- Sélectionne : CHOIX - REPONSE -->
+      <line class="ln" x1="710" y1="305" x2="690" y2="385"/>
+      <ellipse class="assoc" cx="725" cy="345" rx="46" ry="15"/><text class="ast" x="725" y="348" text-anchor="middle">Sélectionne</text>
+      <text class="card" x="700" y="316">0,N</text><text class="card" x="668" y="382">0,1</text>
+    </svg>
+    <figcaption>MCD (Merise) — 7 entités. <em>Sélectionne</em> est en 0,1 côté réponse : une réponse peut être vide (temps écoulé).</figcaption>
+  </figure>
+
+  <div class="callout">
+    <strong>Lecture des cardinalités.</strong> Un <em>quiz</em> contient 1 à N questions ; une <em>question</em>
+    appartient à 1 seul quiz. Une <em>session</em> porte sur 1 quiz et est jouée par 1 utilisateur. Chaque
+    <em>réponse</em> concerne 1 question et <em>sélectionne</em> 0 ou 1 choix (0 si le chrono expire avant la réponse).
+  </div>
+
+  <h3>2.2 MLD — Modèle Logique de Données</h3>
+  <p>Traduction du MCD en tables relationnelles. Clés primaires <u>soulignées</u>, clés étrangères préfixées par <code class="inl">#</code>.</p>
+  <div class="tree">utilisateur (<b><u>id_utilisateur</u></b>, pseudo, email, mot_de_passe, role, created_at)
+
+categorie (<b><u>id_categorie</u></b>, libelle, description, emoji)
+
+quiz (<b><u>id_quiz</u></b>, theme, difficulte, created_at,
+      <b>#id_categorie</b>, <b>#id_utilisateur</b>)
+
+question (<b><u>id_question</u></b>, position, intitule, explication, <b>#id_quiz</b>)
+
+choix (<b><u>id_choix</u></b>, position, texte, est_correcte, <b>#id_question</b>)
+
+session (<b><u>id_session</u></b>, score, nb_bonnes, serie_courante, serie_max,
+         termine, created_at, <b>#id_quiz</b>, <b>#id_utilisateur</b>)
+
+reponse (<b><u>id_reponse</u></b>, correcte, temps_ms, points,
+         <b>#id_session</b>, <b>#id_question</b>, <b>#id_choix</b>)</div>
+
+  <h3>2.3 MPD — Modèle Physique de Données</h3>
+  <p>Script SQL <strong>exécutable</strong> sur PostgreSQL 16 (c'est la migration réellement utilisée par l'application). Les énumérations sont contraintes par <code class="inl">CHECK</code>.</p>
+  <pre><span class="c">-- ============ Quiz d'Æther — schéma PostgreSQL ============</span>
+
+<span class="k">CREATE TABLE</span> <span class="t">utilisateur</span> (
+    <span class="pk">id_utilisateur</span>  <span class="t">SERIAL</span> <span class="k">PRIMARY KEY</span>,
+    pseudo          <span class="t">VARCHAR</span>(50)  <span class="k">NOT NULL UNIQUE</span>,
+    email           <span class="t">VARCHAR</span>(255) <span class="k">NOT NULL UNIQUE</span>,
+    mot_de_passe    <span class="t">VARCHAR</span>(255) <span class="k">NOT NULL</span>,   <span class="c">-- hash Argon2id</span>
+    role            <span class="t">VARCHAR</span>(20)  <span class="k">NOT NULL DEFAULT</span> <span class="s">'joueur'</span>
+                    <span class="k">CHECK</span> (role <span class="k">IN</span> (<span class="s">'joueur'</span>,<span class="s">'admin'</span>)),
+    created_at      <span class="t">TIMESTAMPTZ</span> <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="k">CREATE TABLE</span> <span class="t">categorie</span> (
+    <span class="pk">id_categorie</span>  <span class="t">SERIAL</span> <span class="k">PRIMARY KEY</span>,
+    libelle       <span class="t">VARCHAR</span>(80) <span class="k">NOT NULL UNIQUE</span>,
+    description  <span class="t">TEXT</span>,
+    emoji         <span class="t">VARCHAR</span>(8)
+);
+
+<span class="k">CREATE TABLE</span> <span class="t">quiz</span> (
+    <span class="pk">id_quiz</span>         <span class="t">SERIAL</span> <span class="k">PRIMARY KEY</span>,
+    theme           <span class="t">VARCHAR</span>(120) <span class="k">NOT NULL</span>,
+    difficulte      <span class="t">VARCHAR</span>(20)  <span class="k">NOT NULL</span>
+                    <span class="k">CHECK</span> (difficulte <span class="k">IN</span> (<span class="s">'facile'</span>,<span class="s">'moyen'</span>,<span class="s">'difficile'</span>)),
+    id_categorie    <span class="t">INT</span> <span class="k">REFERENCES</span> categorie(id_categorie),
+    id_utilisateur  <span class="t">INT</span> <span class="k">NOT NULL REFERENCES</span> utilisateur(id_utilisateur) <span class="k">ON DELETE CASCADE</span>,
+    created_at      <span class="t">TIMESTAMPTZ</span> <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="k">CREATE TABLE</span> <span class="t">question</span> (
+    <span class="pk">id_question</span>  <span class="t">SERIAL</span> <span class="k">PRIMARY KEY</span>,
+    id_quiz      <span class="t">INT</span> <span class="k">NOT NULL REFERENCES</span> quiz(id_quiz) <span class="k">ON DELETE CASCADE</span>,
+    position     <span class="t">INT</span> <span class="k">NOT NULL</span>,
+    intitule     <span class="t">TEXT</span> <span class="k">NOT NULL</span>,
+    explication  <span class="t">TEXT</span>,
+    <span class="k">UNIQUE</span> (id_quiz, position)
+);
+
+<span class="k">CREATE TABLE</span> <span class="t">choix</span> (
+    <span class="pk">id_choix</span>      <span class="t">SERIAL</span> <span class="k">PRIMARY KEY</span>,
+    id_question   <span class="t">INT</span> <span class="k">NOT NULL REFERENCES</span> question(id_question) <span class="k">ON DELETE CASCADE</span>,
+    position      <span class="t">INT</span> <span class="k">NOT NULL</span>,
+    texte         <span class="t">TEXT</span> <span class="k">NOT NULL</span>,
+    est_correcte  <span class="t">BOOLEAN</span> <span class="k">NOT NULL DEFAULT</span> false,
+    <span class="k">UNIQUE</span> (id_question, position)
+);
+
+<span class="k">CREATE TABLE</span> <span class="t">session</span> (
+    <span class="pk">id_session</span>      <span class="t">SERIAL</span> <span class="k">PRIMARY KEY</span>,
+    id_quiz         <span class="t">INT</span> <span class="k">NOT NULL REFERENCES</span> quiz(id_quiz) <span class="k">ON DELETE CASCADE</span>,
+    id_utilisateur  <span class="t">INT</span> <span class="k">NOT NULL REFERENCES</span> utilisateur(id_utilisateur) <span class="k">ON DELETE CASCADE</span>,
+    score           <span class="t">INT</span> <span class="k">NOT NULL DEFAULT</span> 0,
+    nb_bonnes       <span class="t">INT</span> <span class="k">NOT NULL DEFAULT</span> 0,
+    serie_courante  <span class="t">INT</span> <span class="k">NOT NULL DEFAULT</span> 0,
+    serie_max       <span class="t">INT</span> <span class="k">NOT NULL DEFAULT</span> 0,
+    termine         <span class="t">BOOLEAN</span> <span class="k">NOT NULL DEFAULT</span> false,
+    created_at      <span class="t">TIMESTAMPTZ</span> <span class="k">NOT NULL DEFAULT</span> now()
+);
+
+<span class="k">CREATE TABLE</span> <span class="t">reponse</span> (
+    <span class="pk">id_reponse</span>   <span class="t">SERIAL</span> <span class="k">PRIMARY KEY</span>,
+    id_session   <span class="t">INT</span> <span class="k">NOT NULL REFERENCES</span> session(id_session) <span class="k">ON DELETE CASCADE</span>,
+    id_question  <span class="t">INT</span> <span class="k">NOT NULL REFERENCES</span> question(id_question),
+    id_choix     <span class="t">INT</span> <span class="k">REFERENCES</span> choix(id_choix),     <span class="c">-- NULL si temps écoulé</span>
+    correcte     <span class="t">BOOLEAN</span> <span class="k">NOT NULL</span>,
+    temps_ms     <span class="t">INT</span> <span class="k">NOT NULL</span>,
+    points       <span class="t">INT</span> <span class="k">NOT NULL</span>,
+    <span class="k">UNIQUE</span> (id_session, id_question)     <span class="c">-- une seule réponse par question</span>
+);
+
+<span class="c">-- ===== Index utiles =====</span>
+<span class="k">CREATE INDEX</span> idx_question_quiz   <span class="k">ON</span> question(id_quiz);
+<span class="k">CREATE INDEX</span> idx_choix_question  <span class="k">ON</span> choix(id_question);
+<span class="k">CREATE INDEX</span> idx_session_score   <span class="k">ON</span> session(score <span class="k">DESC</span>);
+<span class="k">CREATE INDEX</span> idx_reponse_session <span class="k">ON</span> reponse(id_session);</pre>
+  <p class="legend">Note : la contrainte <code class="inl">UNIQUE (id_session, id_question)</code> empêche de répondre deux fois à la même question (anti-triche basique).</p>
+</section>
+
+<!-- ============ 3. STACK ============ -->
+<section>
+  <h2 class="section-title"><span class="num">3</span>Stack technique &amp; justifications</h2>
+  <p class="lead">Architecture découplée : SPA React (client) ⇄ API REST Rust ⇄ PostgreSQL, avec appels sortants vers l'API OpenAI.</p>
+
+  <div class="callout gold">
+    <strong>Le pari Rust.</strong> Le backend est écrit en <strong>Rust</strong>. Ce n'est pas le choix « par défaut »
+    d'un projet web étudiant — c'est un choix assumé : sûreté mémoire sans ramasse-miettes, vérification forte par
+    le compilateur, et un coût d'exécution minime. C'est précieux pour un serveur qui valide les réponses, calcule
+    les scores et orchestre des appels réseau coûteux vers GPT-4o.
+  </div>
+
+  <h3>3.1 Frontend</h3>
+  <table>
+    <thead><tr><th style="width:20%">Élément</th><th style="width:24%">Choix</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td>Bibliothèque UI</td><td>React 19</td><td>Rendu par composants idéal pour une interface qui change d'état à chaque question (chrono, sélection, retour) ; écosystème mature et employabilité.</td></tr>
+      <tr><td>Langage</td><td>TypeScript</td><td>Typage statique : les structures échangées avec l'API Rust (typée elle aussi) sont décrites côté client, éliminant une classe entière de bugs d'intégration.</td></tr>
+      <tr><td>Build / dev</td><td>Vite</td><td>Démarrage instantané, HMR rapide, build optimisé — bien plus léger que Webpack/CRA.</td></tr>
+      <tr><td>UI / CSS</td><td>Tailwind CSS</td><td>Prototypage rapide et cohérent avec les wireframes ; thème sombre décliné via les design tokens.</td></tr>
+      <tr><td>Routage</td><td>React Router</td><td>Standard de fait pour le routage SPA (accueil, lobby, quiz, classement) avec routes protégées par authentification.</td></tr>
+      <tr><td>État serveur</td><td>TanStack Query</td><td>Cache, invalidation et états de chargement gérés proprement — essentiel pour l'attente de la génération IA (latence) et la synchro classement/historique.</td></tr>
+      <tr><td>État client</td><td>Zustand</td><td>Store minimaliste pour la session d'authentification, sans la verbosité de Redux.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.2 Backend</h3>
+  <table>
+    <thead><tr><th style="width:20%">Élément</th><th style="width:24%">Choix</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td>Langage</td><td>Rust (édition 2021)</td><td>Sûreté mémoire et concurrence garanties par le compilateur ; ces erreurs sont éliminées <em>avant</em> l'exécution sur un serveur multi-joueurs.</td></tr>
+      <tr><td>Framework web</td><td>Axum</td><td>Framework asynchrone (Tokio) ergonomique et performant ; le modèle async convient à un backend dont la latence dominante est l'attente d'OpenAI (I/O-bound).</td></tr>
+      <tr><td>Accès BDD</td><td>SQLx</td><td>SQL async, sans ORM lourd : on garde le contrôle du SQL, cohérent avec le travail de modélisation du §2.</td></tr>
+      <tr><td>Authentification</td><td>JWT (<code class="inl">jsonwebtoken</code>)</td><td>Authentification stateless adaptée à une API REST consommée par une SPA ; le token porte l'identité et le rôle, vérifiés par un middleware Axum.</td></tr>
+      <tr><td>Hachage mots de passe</td><td>Argon2id (<code class="inl">argon2</code>)</td><td>Fonction de hachage lauréate du Password Hashing Competition, recommandée par l'OWASP.</td></tr>
+      <tr><td>Client IA</td><td><code class="inl">async-openai</code></td><td>Client Rust typé pour l'API OpenAI (chat completions, sortie JSON structurée) — intégration directe de la génération de quiz (cf. §4).</td></tr>
+      <tr><td>Sérialisation</td><td>Serde</td><td>(Dé)sérialisation JSON de référence en Rust ; mappe les corps de requête/réponse et la sortie de l'IA.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Honnêteté sur l'arbitrage.</strong> Rust a une courbe d'apprentissage plus raide que Node.js et un temps de
+    compilation plus long. Ce coût est assumé : le projet est aussi une montée en compétence sur un langage système
+    recherché, et la rigueur du compilateur réduit drastiquement le débogage en aval.
+  </div>
+
+  <h3>3.3 Base de données</h3>
+  <table>
+    <thead><tr><th style="width:20%">Élément</th><th style="width:24%">Choix</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td>SGBD</td><td>PostgreSQL 16</td><td>Relationnel robuste, parfaitement adapté au schéma normalisé du §2 (intégrité référentielle, contraintes <code class="inl">CHECK</code> et <code class="inl">UNIQUE</code> pour l'anti-triche).</td></tr>
+      <tr><td>Hébergement</td><td>Neon (dev &amp; prod)</td><td>PostgreSQL serverless avec branches de base et offre gratuite généreuse — idéal en contexte étudiant.</td></tr>
+      <tr><td>Migrations</td><td><code class="inl">sqlx-cli</code></td><td>Migrations versionnées dans le dépôt, rejouées automatiquement au démarrage de l'API.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.4 Outils &amp; infrastructure</h3>
+  <table>
+    <thead><tr><th style="width:30%">Élément</th><th style="width:30%">Choix</th><th>Justification</th></tr></thead>
+    <tbody>
+      <tr><td>Versioning</td><td>Git + GitHub (2 dépôts)</td><td>Séparation front / back, historique, revue par Pull Request.</td></tr>
+      <tr><td>Intégration continue</td><td>GitHub Actions</td><td>Back : <code class="inl">fmt</code> + <code class="inl">clippy</code> + tests + build. Front : typecheck + tests + build. À chaque push.</td></tr>
+      <tr><td>Conteneurisation</td><td>Docker</td><td>PostgreSQL en local via <code class="inl">docker compose</code> ; image du binaire Rust reproductible.</td></tr>
+      <tr><td>Déploiement back</td><td>Fly.io / Shuttle.rs</td><td>Déploiement simple d'un binaire Rust conteneurisé.</td></tr>
+      <tr><td>Déploiement front</td><td>Vercel</td><td>Déploiement de la SPA optimisé, previews par PR, CDN global.</td></tr>
+      <tr><td>Gestion de projet</td><td>GitHub Projects</td><td>Backlog priorisé (Must/Should/Nice) lié aux issues et PR.</td></tr>
+    </tbody>
+  </table>
+
+  <figure>
+    <svg viewBox="0 0 720 200" font-family="Helvetica,Arial,sans-serif">
+      <rect x="0" y="0" width="720" height="200" fill="#fff"/>
+      <rect x="24" y="70" width="150" height="60" rx="8" fill="#f4f0fa" stroke="#5b3ea8" stroke-width="1.5"/>
+      <text x="99" y="95" font-size="11" font-weight="700" fill="#2a1a55" text-anchor="middle">SPA React</text>
+      <text x="99" y="112" font-size="8" fill="#6b6480" text-anchor="middle">TypeScript · Vite · Tailwind</text>
+      <rect x="285" y="70" width="150" height="60" rx="8" fill="#fdf8ec" stroke="#b8902f" stroke-width="1.5"/>
+      <text x="360" y="95" font-size="11" font-weight="700" fill="#8a6a13" text-anchor="middle">API Rust</text>
+      <text x="360" y="112" font-size="8" fill="#6b6480" text-anchor="middle">Axum · SQLx · JWT</text>
+      <rect x="546" y="20" width="150" height="56" rx="8" fill="#e3f3ea" stroke="#2f8f5b" stroke-width="1.5"/>
+      <text x="621" y="44" font-size="11" font-weight="700" fill="#1f6b40" text-anchor="middle">PostgreSQL</text>
+      <text x="621" y="60" font-size="8" fill="#6b6480" text-anchor="middle">Neon</text>
+      <rect x="546" y="122" width="150" height="56" rx="8" fill="#eef3fb" stroke="#3a6ea8" stroke-width="1.5"/>
+      <text x="621" y="146" font-size="11" font-weight="700" fill="#2a4f80" text-anchor="middle">OpenAI GPT-4o</text>
+      <text x="621" y="162" font-size="8" fill="#6b6480" text-anchor="middle">génération de quiz</text>
+      <line x1="174" y1="100" x2="285" y2="100" stroke="#9a93b3" stroke-width="1.5"/><polygon points="285,100 277,96 277,104" fill="#9a93b3"/>
+      <text x="229" y="94" font-size="7.5" fill="#6b6480" text-anchor="middle">REST / JSON</text>
+      <line x1="435" y1="92" x2="546" y2="58" stroke="#9a93b3" stroke-width="1.5"/><polygon points="546,58 537,58 542,66" fill="#9a93b3"/>
+      <text x="495" y="68" font-size="7.5" fill="#6b6480" text-anchor="middle">SQL</text>
+      <line x1="435" y1="112" x2="546" y2="146" stroke="#9a93b3" stroke-width="1.5"/><polygon points="546,146 537,142 538,151" fill="#9a93b3"/>
+      <text x="495" y="142" font-size="7.5" fill="#6b6480" text-anchor="middle">HTTPS</text>
+    </svg>
+    <figcaption>Architecture générale — SPA ⇄ API Rust ⇄ PostgreSQL, avec appels sortants vers OpenAI.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ 4. IA ============ -->
+<section>
+  <h2 class="section-title"><span class="num">4</span>Fonctionnalité IA — la génération de quiz</h2>
+  <p class="lead">L'IA n'est pas un accessoire : c'est elle qui crée le contenu du jeu. Sans elle, il n'y a pas de quiz.</p>
+
+  <h3>4.1 Description de la fonctionnalité</h3>
+  <p>
+    À partir d'un <strong>thème</strong>, d'une <strong>difficulté</strong> et d'un <strong>nombre de questions</strong>,
+    une IA (GPT-4o) génère un <strong>questionnaire à choix multiples</strong> complet : pour chaque question, un
+    intitulé, quatre propositions (une seule correcte) et une courte explication. Le quiz est ensuite stocké en base
+    et joué par l'utilisateur.
+  </p>
+  <ul>
+    <li><strong>Problème résolu :</strong> des questions inédites sur n'importe quel sujet, à l'infini — fini les banques de questions figées et répétitives.</li>
+    <li><strong>Moment d'intervention :</strong> au lancement d'une partie depuis le lobby (wireframe ③). C'est l'étape qui crée le contenu joué juste après.</li>
+  </ul>
+
+  <h3>4.2 Choix technique</h3>
+  <table class="tight">
+    <tbody>
+      <tr><th style="width:26%">Modèle</th><td><strong>OpenAI GPT-4o</strong> — solide en culture générale et en production de sorties structurées fiables. Repli possible sur <code class="inl">gpt-4o-mini</code> pour réduire le coût.</td></tr>
+      <tr><th>Où ?</th><td><strong>Côté backend (Rust).</strong> Le client React ne parle <em>jamais</em> directement à OpenAI : la clé API reste secrète sur le serveur, qui contrôle le prompt, valide la sortie et — surtout — <strong>ne renvoie jamais la bonne réponse au client</strong> avant qu'il ait répondu (anti-triche).</td></tr>
+      <tr><th>Comment ?</th><td>Le crate <code class="inl">async-openai</code> appelle l'endpoint <em>Chat Completions</em> avec <code class="inl">response_format = json_object</code>. La sortie est <strong>validée</strong> (4 propositions par question, index de bonne réponse cohérent) puis enregistrée dans les tables <code class="inl">quiz</code>, <code class="inl">question</code> et <code class="inl">choix</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.3 Flux de données — entrée &amp; sortie</h3>
+  <div class="grid-2">
+    <div>
+      <h4>Entrée envoyée au modèle</h4>
+      <ul>
+        <li><strong>Prompt système :</strong> rôle, règles (4 choix, une seule bonne réponse, explication, pas d'ambiguïté), format de sortie imposé.</li>
+        <li><strong>Thème :</strong> catégorie choisie ou sujet libre saisi par le joueur.</li>
+        <li><strong>Difficulté :</strong> facile / moyen / difficile.</li>
+        <li><strong>Nombre de questions :</strong> borné entre 3 et 10.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Sortie récupérée (JSON structuré)</h4>
+      <ul>
+        <li><strong>questions :</strong> liste d'objets question.</li>
+        <li><strong>intitule :</strong> l'énoncé de la question.</li>
+        <li><strong>choix :</strong> tableau de 4 propositions.</li>
+        <li><strong>bonne_reponse :</strong> index (0-3) de la bonne proposition.</li>
+        <li><strong>explication :</strong> justification courte de la réponse.</li>
+      </ul>
+    </div>
+  </div>
+  <p>
+    Le backend valide puis répartit cette sortie dans le schéma relationnel ; côté <code class="inl">choix</code>,
+    l'attribut <code class="inl">est_correcte</code> est positionné selon l'index renvoyé. Lors du jeu, le calcul du
+    score (base + bonus de rapidité + bonus de série) est effectué <strong>côté serveur</strong> à chaque réponse.
+  </p>
+
+  <pre><span class="c">// Sortie structurée imposée au modèle (response_format json_object) — extrait</span>
+{
+  <span class="s">"questions"</span>: [
+    {
+      <span class="s">"intitule"</span>: <span class="s">"Quel astronome a démontré que la Terre tourne autour du Soleil ?"</span>,
+      <span class="s">"choix"</span>: [<span class="s">"Galilée"</span>, <span class="s">"Nicolas Copernic"</span>, <span class="s">"Isaac Newton"</span>, <span class="s">"Ptolémée"</span>],
+      <span class="s">"bonne_reponse"</span>: 1,
+      <span class="s">"explication"</span>: <span class="s">"Copernic a proposé le modèle héliocentrique au XVIe siècle."</span>
+    }
+  ]
+}</pre>
+
+  <figure>
+    <svg viewBox="0 0 720 150" font-family="Helvetica,Arial,sans-serif">
+      <rect x="0" y="0" width="720" height="150" fill="#fff"/>
+      <g font-size="9" text-anchor="middle">
+        <rect x="14" y="55" width="120" height="40" rx="6" fill="#f4f0fa" stroke="#5b3ea8"/><text x="74" y="72" font-weight="700" fill="#2a1a55">Joueur</text><text x="74" y="85" fill="#6b6480" font-size="7.5">thème · difficulté</text>
+        <rect x="170" y="55" width="124" height="40" rx="6" fill="#fdf8ec" stroke="#b8902f"/><text x="232" y="72" font-weight="700" fill="#8a6a13">API Rust</text><text x="232" y="85" fill="#6b6480" font-size="7.5">construit le prompt</text>
+        <rect x="330" y="55" width="120" height="40" rx="6" fill="#eef3fb" stroke="#3a6ea8"/><text x="390" y="72" font-weight="700" fill="#2a4f80">GPT-4o</text><text x="390" y="85" fill="#6b6480" font-size="7.5">QCM en JSON</text>
+        <rect x="486" y="55" width="124" height="40" rx="6" fill="#fdf8ec" stroke="#b8902f"/><text x="548" y="72" font-weight="700" fill="#8a6a13">API Rust</text><text x="548" y="85" fill="#6b6480" font-size="7.5">valide + stocke</text>
+        <rect x="630" y="20" width="78" height="36" rx="6" fill="#e3f3ea" stroke="#2f8f5b"/><text x="669" y="42" fill="#1f6b40" font-size="7.5">PostgreSQL</text>
+        <rect x="630" y="94" width="78" height="40" rx="6" fill="#f4f0fa" stroke="#5b3ea8"/><text x="669" y="111" font-weight="700" fill="#2a1a55">Joueur</text><text x="669" y="124" fill="#6b6480" font-size="7.5">quiz (sans réponses)</text>
+      </g>
+      <g stroke="#9a93b3" stroke-width="1.3" fill="#9a93b3">
+        <line x1="134" y1="75" x2="168" y2="75"/><polygon points="170,75 162,71 162,79"/>
+        <line x1="294" y1="75" x2="328" y2="75"/><polygon points="330,75 322,71 322,79"/>
+        <line x1="450" y1="75" x2="484" y2="75"/><polygon points="486,75 478,71 478,79"/>
+        <line x1="610" y1="62" x2="630" y2="46"/><polygon points="630,44 621,45 626,53"/>
+        <line x1="610" y1="92" x2="630" y2="106"/><polygon points="630,108 621,104 622,113"/>
+      </g>
+    </svg>
+    <figcaption>Génération d'un quiz — l'API Rust construit le prompt, appelle GPT-4o, valide et stocke, puis renvoie le quiz au joueur sans les bonnes réponses.</figcaption>
+  </figure>
+
+  <div class="callout gold">
+    <strong>Implémentation réelle.</strong> Cette fonctionnalité est effectivement développée : c'est le moteur de
+    contenu du jeu, sans lequel l'application n'a pas de raison d'être. Les fonctionnalités IA bonus (quiz quotidien
+    partagé, génération d'illustration de thème) viendront l'enrichir si le temps le permet.
+  </div>
+</section>
+
+</body>
+</html>
